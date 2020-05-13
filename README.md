@@ -1,2 +1,2 @@
 # AI_IDS
-Training an NN system to identify RDP malware.
+Training a NN system to identify RDP malware.
