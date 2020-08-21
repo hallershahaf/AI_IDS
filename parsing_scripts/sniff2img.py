@@ -1,5 +1,5 @@
-
-def sniff2img(sniff_file, str(sing_or_mult), str(bin_or_txt)):
+"""Reads hex dump of wireshark and trnsform to images"""
+def sniff2img(sniff_file, sing_or_mult, bin_or_txt):
     """Imports"""
     import re
     import numpy as np
@@ -52,36 +52,43 @@ def sniff2img(sniff_file, str(sing_or_mult), str(bin_or_txt)):
     saves the parsed images to a file
     """
     #multiple files mode
-    if sing_or_mult.lower() = "m":
+    if sing_or_mult.lower() == "m":
         #textual files mode
-        if bin_or_txt.lower() = "t"
+        if bin_or_txt.lower() == "t":
             for i in range(packets):
                 f_name = "packet_" + str(i) + ".txt"
                 np.savetxt(str(f_name), parsed[i], delimiter = ',')
         #binary files mode
-        elif bin_or_txt.lower() = "b"
+        elif bin_or_txt.lower() == "b":
             for i in range(packets):
                 f_name = "packet " + str(i)
                 np.save(str(f_name), parsed[i])
     #single file mode
-    elif (sing_or_mult.lower() = "s":
+    elif sing_or_mult.lower() == "s":
+        f_name = "parsed_sniff"
         #textual file mode
-        if bin_or_txt.lower() = "t"
+        if bin_or_txt.lower() == "t":
             #i = image
             #r = rows
             #c = cols
-            f_name = "parsed_sniff.txt"
+            f_name = f_name + ".txt"
             data = ""
             for i in range(packets):
                 for r in range(rows):
                     for c in range(cols):
                         if c < cols - 1:
                             data = data + str(parsed[i][r][c]) +","
-                    data = data + "\\r\\n"
-                data = data + "\\r\\n"
+                        else:
+                            data = data + str(parsed[i][r][c])
+                    data = data + "\n"
+                data = data + "\n"
             f = open(str(f_name), 'wb')
             f.write(data)
             f.close()
         #binary file mode
-        elif bin_or_txt.lower() = "b"
+        elif bin_or_txt.lower() == "b":
             np.save(str(f_name), parsed)
+
+
+
+
