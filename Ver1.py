@@ -2,7 +2,6 @@
 # Written By Idan Tau & Shahaf Haller
 # CNN module based on https://ieeexplore.ieee.org/document/8171733
 # "Algorithm 1 Spatial Feature Learning" - HAST_I
-from typing import Any
 
 import torch.nn as nn
 import torch.nn.functional as func
