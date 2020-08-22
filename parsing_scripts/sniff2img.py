@@ -5,7 +5,6 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
     """Imports"""
     import re
     import numpy as np
-    
     """Globals"""
     # Size of images in pixels
     mtu = 1514
@@ -24,21 +23,41 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
 
     # Wireshark mode
     tmp = []
+    parsed = []
     if wshark_or_tdump == "w":
         parsed = packets.split('\\r\\n\\r\\n')
 
         for i in range(len(parsed)):
             tmp.append(parsed[i][75:])
             tmp[i] = re.sub(r'[^\w]', '', tmp[i])
+    # tcpdump mode
+    if wshark_or_tdump == "t":
+        parsed = packets.split('0x')
 
+    i = 0
+    while i < len(parsed) - 1:
+        if re.search('\.', parsed[i]):
+            print("match ", i)
+            i += 1
+            data = ''
+            while not (re.search('\.', parsed[i])) and i < len(parsed) - 1:
+                parsed[i] = re.sub(r'\\n.*$', '', parsed[i])
+                parsed[i] = parsed[i][7:]
+                parsed[i] = re.sub(r'[^\w]', '', parsed[i])
+                data = data + parsed[i]
+                i += 1
+                print(i)
+            tmp.append(data)
     """
     create images
     #creates a 3d matrix where each matrix is an image of a packet
     at the end of this block, parsed holds the parsed images
     """
     packets = len(tmp)
-    parsed = np.full((packets, rows, cols), 255)
+    # pre-converting status
+    print("found ", str(packets), " packets")
 
+    parsed = np.full((packets, rows, cols), 255)
     # i = image
     # r = rows
     # c = cols
@@ -53,9 +72,12 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
                         break
                     else:
                         parsed[i, r, c] = int(str(tmp[i][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
+        # mid-converting status
+        print("finished ", str(i), " packets of ", str(packets))
     """
     saves the parsed images to a file
     """
+    print("saving")
     # Multiple files mode
     if sing_or_mult.lower() == "m":
         # Textual files mode
