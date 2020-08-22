@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+
 class Net(nn.Module):
     
     # Actual parameters of the CNN are not mentioned in the article,
@@ -22,10 +23,10 @@ class Net(nn.Module):
     T = np.array([2,   2,  2,   2])
     
     # These are changed based on how the images are made
-    # from packets of data
-    
+    # from packets of data.
+    # Current image size used is 32x48.
     input_channels = 3
-    image_dimension = 32
+    image_dimension_x = 32
 
     def __init__(self):     
         super(Net, self).__init__()

@@ -14,7 +14,8 @@ def img2mat(sing_or_mult, bin_or_txt):
     pack_files = []
     for f in range(len(all_files)):
         if all_files[f].startswith("packet_"):
-            pack_files.append(all_files[f]) #pack_files contains the names of all the packet files
+            # pack_files contains the names of all the packet files
+            pack_files.append(all_files[f])
     images = len(pack_files) 
     """"create variables from the files"""
     #single file mode
