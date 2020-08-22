@@ -2,15 +2,15 @@
 # Written By Idan Tau & Shahaf Haller
 # CNN module based on https://ieeexplore.ieee.org/document/8171733
 # "Algorithm 1 Spatial Feature Learning" - HAST_I
+from typing import Any
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as func
 import numpy as np
 
 
 class Net(nn.Module):
-    
+
     # Actual parameters of the CNN are not mentioned in the article,
     # but since both temp vectors are concatenated the numbers should be 
     # different so both CNN won't be symmetrical
@@ -102,7 +102,8 @@ class Net(nn.Module):
         return x + y
 
     def num_flat_features(self, z):
-        size = z.size()[1:]  # all dimensions except the batch dimension
+        # All dimensions except the batch dimension
+        size = z.size()[1:]
         num_features = 1
         for s in size:
             num_features *= s

@@ -1,4 +1,5 @@
 def img2mat(sing_or_mult, bin_or_txt):
+
     """Imports"""
     import numpy as np
     import os
