@@ -5,7 +5,7 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as func
 import numpy as np
 
 
@@ -42,8 +42,8 @@ class Net(nn.Module):
         conv_reduction = (Net.S - 1) / 2
         
         # First convolution reduction
-        size_1 = Net.image_dimension - conv_reduction[0];
-        size_2 = Net.image_dimension - conv_reduction[2];
+        size_1 = Net.image_dimension - conv_reduction[0]
+        size_2 = Net.image_dimension - conv_reduction[2]
         
         # First Max pooling reduction
         # P.S. make sure the result is even for easier living
@@ -51,8 +51,8 @@ class Net(nn.Module):
         size_2 /= Net.T[2]
         
         # Second convolution reduction
-        size_1 -= conv_reduction[1]; 
-        size_2 -= conv_reduction[3];
+        size_1 -= conv_reduction[1]
+        size_2 -= conv_reduction[3]
         
         # Second Max pooling reduction
         # P.S. make sure the result is even for easier living        
@@ -80,23 +80,23 @@ class Net(nn.Module):
         # relu(x) -> max{x,0}
         
         # Conv -> relu -> pool -> conv -> relu -> pool
-        x = F.max_pool2d(F.relu(self.conv1_1(z)), Net.T[0])
-        x = F.max_pool2d(F.relu(self.conv1_2(x)), Net.T[1])
+        x = func.max_pool2d(func.relu(self.conv1_1(z)), Net.T[0])
+        x = func.max_pool2d(func.relu(self.conv1_2(x)), Net.T[1])
     
-        y = F.max_pool2d(F.relu(self.conv2_1(z)), Net.T[2])
-        y = F.max_pool2d(F.relu(self.conv2_2(y)), Net.T[3])
+        y = func.max_pool2d(func.relu(self.conv2_1(z)), Net.T[2])
+        y = func.max_pool2d(func.relu(self.conv2_2(y)), Net.T[3])
 
         # Turn the matrices into long vectors
         x = x.view(1, self.num_flat_features(x))
         y = y.view(1, self.num_flat_features(y))
         
         # Reduce the vectors
-        x = F.relu(self.fc1_1(x))
-        x = F.relu(self.fc1_2(x))
+        x = func.relu(self.fc1_1(x))
+        x = func.relu(self.fc1_2(x))
         x = self.fc1_3(x)
         
-        y = F.relu(self.fc2_1(y))
-        y = F.relu(self.fc2_2(y))
+        y = func.relu(self.fc2_1(y))
+        y = func.relu(self.fc2_2(y))
         y = self.fc2_3(y)
 
         return x + y
