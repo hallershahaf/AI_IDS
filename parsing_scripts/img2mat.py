@@ -8,7 +8,6 @@ def img2mat(sing_or_mult, bin_or_txt):
     MTU = 1514
     cols = 32
     rows = int(np.ceil(MTU / cols))
-    
     """find all packet files"""
     all_files = os.listdir()
     pack_files = []
@@ -39,3 +38,4 @@ def img2mat(sing_or_mult, bin_or_txt):
         elif bin_or_txt.lower() == "b":
             for p in range(len(pack_files)):
                 packets[p] = np.load(pack_files[p])
+    return packets
