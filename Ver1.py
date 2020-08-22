@@ -3,9 +3,19 @@
 # CNN module based on https://ieeexplore.ieee.org/document/8171733
 # "Algorithm 1 Spatial Feature Learning" - HAST_I
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as func
 import numpy as np
+
+
+def num_flat_features(z):
+    # All dimensions except the batch dimension
+    size = z.size()[1:]
+    num_features = 1
+    for s in size:
+        num_features *= s
+    return num_features
 
 
 class Net(nn.Module):
@@ -18,14 +28,14 @@ class Net(nn.Module):
     # S{i} - Size of convolution matrix
     # T{i} - size of maxPooling layer matrix
     C = np.array([6,  16,  6,  16])
-    S = np.array([5,   5,  5,   5])
+    S = np.array([3,   4,  5,   3])
     T = np.array([2,   2,  2,   2])
     
     # These are changed based on how the images are made
     # from packets of data.
-    # Current image size used is 32x48.
+    # Current image size used in the project is 32x48.
     input_channels = 3
-    image_dimension_x = 32
+    image_dimension = 32
 
     def __init__(self):     
         super(Net, self).__init__()
@@ -37,8 +47,8 @@ class Net(nn.Module):
         self.conv2_1 = nn.Conv2d(Net.input_channels, Net.C[2], Net.S[2])
         self.conv2_2 = nn.Conv2d(Net.C[2], Net.C[3], Net.S[3])
         
-        # A convolution matrix of size 5 will reduce 2 indices from each side
-        conv_reduction = (Net.S - 1) / 2
+        # A convolution matrix scales the image down by (matrix size) - 1;
+        conv_reduction = (Net.S - 1)
         
         # First convolution reduction
         size_1 = Net.image_dimension - conv_reduction[0]
@@ -46,8 +56,8 @@ class Net(nn.Module):
         
         # First Max pooling reduction
         # P.S. make sure the result is even for easier living
-        size_1 /= Net.T[0]
-        size_2 /= Net.T[2]
+        size_1 //= Net.T[0]
+        size_2 //= Net.T[2]
         
         # Second convolution reduction
         size_1 -= conv_reduction[1]
@@ -55,12 +65,13 @@ class Net(nn.Module):
         
         # Second Max pooling reduction
         # P.S. make sure the result is even for easier living        
-        size_1 /= Net.T[1]
-        size_2 /= Net.T[3]
+        size_1 //= Net.T[1]
+        size_2 //= Net.T[3]
         
         # Final size for the linear vector reduction process
-        size_1 *= Net.C[1]
-        size_2 *= Net.C[3]
+        # The size needs to be x * y * final channels
+        size_1 = (size_1 ** 2) * Net.C[1]
+        size_2 = (size_2 ** 2) * Net.C[3]
 
         # First linear reduction
         self.fc1_1 = nn.Linear(size_1, size_1 // 2)
@@ -86,8 +97,8 @@ class Net(nn.Module):
         y = func.max_pool2d(func.relu(self.conv2_2(y)), Net.T[3])
 
         # Turn the matrices into long vectors
-        x = x.view(1, self.num_flat_features(x))
-        y = y.view(1, self.num_flat_features(y))
+        x = x.view(1, num_flat_features(x))
+        y = y.view(1, num_flat_features(y))
         
         # Reduce the vectors
         x = func.relu(self.fc1_1(x))
@@ -99,14 +110,6 @@ class Net(nn.Module):
         y = self.fc2_3(y)
 
         return x + y
-
-    def num_flat_features(self, z):
-        # All dimensions except the batch dimension
-        size = z.size()[1:]
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
 
 
 net = Net()

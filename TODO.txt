@@ -1,4 +1,5 @@
  - Add to both scripts Init func - define working path for binary files.
  - Add status verbose to scripts (for long inputs)
  - Sniff2Img in tcpdump doesn't work currectly (binary file matrix is empty).
+ - Ver1.py doesn't work with images that are not square
  
