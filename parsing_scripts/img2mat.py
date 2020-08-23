@@ -2,13 +2,14 @@ def img2mat(sing_or_mult, bin_or_txt):
     """Imports"""
     import numpy as np
     import os
-    
+
     """Globals"""
     mtu = 1514
     cols = 32
     rows = int(np.ceil(mtu / cols))
     """find all packet files"""
-    all_files = os.listdir()
+    files = IO()
+    all_files = os.listdir(files.in_dir)
     pack_files = []
     packets = []
     for f in range(len(all_files)):
@@ -17,7 +18,7 @@ def img2mat(sing_or_mult, bin_or_txt):
             pack_files.append(all_files[f])
     images = len(pack_files)
     # pre-parsing status
-    print("found ", str(images), " packets")
+    print("found ", str(images), " files")
     """"create variables from the files"""
     # Single file mode
     if sing_or_mult.lower() == "s":
@@ -31,7 +32,7 @@ def img2mat(sing_or_mult, bin_or_txt):
             for p in range(len(pack_files)):
                 packets[p] = np.loadtxt(pack_files[p], delimiter=',')
                 # mid-parsing status
-                print("finished ", str(p+1), " of ", str(images))
+                print("finished ", str(p + 1), " of ", str(images))
         # Binary file mode
         elif bin_or_txt.lower() == "b":
             for p in range(len(pack_files)):
@@ -39,3 +40,13 @@ def img2mat(sing_or_mult, bin_or_txt):
                 # mid-parsing status
                 print("finished ", str(p + 1), " of ", str(images))
     return packets
+
+
+class IO:
+    def __init__(self):
+        import os
+        self.in_dir = os.path.abspath(os.getcwd())
+
+    def in_dir(self):
+        directory = str(input('Please write the input directory in a proper python manner: \n'))
+        self.in_dir = directory

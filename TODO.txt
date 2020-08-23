@@ -1,3 +1,2 @@
- - Add to both scripts Init func - define working path for binary files.
  - Ver1.py doesn't work with images that are not square
  

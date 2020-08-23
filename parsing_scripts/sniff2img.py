@@ -6,6 +6,7 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
     import re
     import numpy as np
     """Globals"""
+    files = IO()
     # Size of images in pixels
     mtu = 1514
     cols = 32
@@ -13,7 +14,8 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
 
     """reading hex"""
     # Read sniff
-    with open(sniff_file, 'rb') as sniff:
+    in_file = files.in_dir + "\\" + sniff_file
+    with open(str(in_file), 'rb') as sniff:
         packets = str(sniff.read())
     """
     parsing sniff   
@@ -37,7 +39,6 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
     i = 0
     while i < len(parsed) - 1:
         if re.search('\.', parsed[i]):
-            print("match ", i)
             i += 1
             data = ''
             while not (re.search('\.', parsed[i])) and i < len(parsed) - 1:
@@ -46,7 +47,6 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
                 parsed[i] = re.sub(r'[^\w]', '', parsed[i])
                 data = data + parsed[i]
                 i += 1
-                print(i)
             tmp.append(data)
     """
     create images
@@ -83,16 +83,16 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
         # Textual files mode
         if bin_or_txt.lower() == "t":
             for i in range(packets):
-                f_name = "packet_" + str(i) + ".txt"
-                np.savetxt(str(f_name), parsed[i], delimiter=',')
+                f_name = files.out_dir + "\\" + "packet_" + str(i) + ".txt"
+                np.savetxt(f_name, parsed[i], delimiter=',')
         # Binary files mode
         elif bin_or_txt.lower() == "b":
             for i in range(packets):
-                f_name = "packet " + str(i)
-                np.save(str(f_name), parsed[i])
+                f_name = files.out_dir + "\\" + "packet " + str(i)
+                np.save(f_name, parsed[i])
     # Single file mode
     elif sing_or_mult.lower() == "s":
-        f_name = "packet_all"
+        f_name = files.out_dir + "\\" + "packet_all"
         # Textual file mode
         if bin_or_txt.lower() == "t":
             # i = image
@@ -109,9 +109,27 @@ def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
                             data = data + str(parsed[i][r][c])
                     data = data + "\n"
                 data = data + "\n"
-            f = open(str(f_name), 'wb')
+            f = open(f_name, 'wb')
             f.write(data)
             f.close()
         # Binary file mode
         elif bin_or_txt.lower() == "b":
-            np.save(str(f_name), parsed)
+            np.save(f_name, parsed)
+
+
+""" Defines a class of the input and output source"""
+
+
+class IO:
+    def __init__(self):
+        import os
+        self.in_dir = os.path.abspath(os.getcwd())
+        self.out_dir = os.path.abspath(os.getcwd())
+
+    def in_dir(self):
+        directory = str(input('Please write the input directory in a proper python manner: \n'))
+        self.in_dir = directory
+
+    def out_dir(self):
+        directory = str(input('Please write the output directory in a proper python manner: \n'))
+        self.out_dir = directory
