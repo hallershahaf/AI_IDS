@@ -1,4 +1,4 @@
-def random_input(exp_safe, vect_length):
+def random_input(vect_length, exp_probe):
     import numpy as np
     import random as rand
 
@@ -7,28 +7,37 @@ def random_input(exp_safe, vect_length):
     # T = test
     mtu = 1514
     cols = 32
+    packets = 100
     rows = int(np.ceil(mtu / cols))
-    packets = vect_length;
 
-    """Define output"""
-    out_vect  = np.full((packets, rows, cols), 255)
-    out_valid = np.full((packets, 1, 1), 255)
+    """Create desicion vector"""
+    exp_or_safe = np.random.choice([0,1], size = vect_length, p = [1 - exp_probe, exp_probe] )
+    """Define output
+    ################################################
+    Each packet is 2-D matrix.
+    Each stream is a 3-D matrix.
+    The whole vector is a 4-D matrix.
+    Meaning: out_mat = [rows of packet,cols of packet, diff packets, diff streams]
+    
+    # Note: The output order is output = [out_mat, out_valid]
+    """
+    out_mat = np.zeros((rows, cols, packets, vect_length))
+    out_valid = exp_or_safe
 
     """Create "exploit" data """
-    if exp_safe == "e":
-        for p in range(packets):
-            for i in range(rows):
-                for j in range(cols):
-                    out_vect[p,i,j]= rand.randrange(0, 255)
-            out_valid[p] = '1'
-        """Create "safe" data """
-    elif exp_safe == "s":
-        for p in range(packets):
-            for i in range(rows -1):
-                for j in range(cols -1 ):
-                    out_vect[p,i,j]= rand.randrange(50, 250)
-            out_valid[p] = '0'
-
-    output = [out_vect, out_valid]
+    for s in range(vect_length):
+        if exp_or_safe[s] == 1:
+            for p in range(packets):
+                for r in range(rows):
+                    for c in range(cols):
+                        out_mat[r,c,p,s]= rand.randrange(0, 255)
+            """Create "safe" data """
+        elif exp_or_safe[s]:
+            for p in range(packets):
+                for r in range(rows):
+                    for c in range(cols):
+                        out_mat[r,c,p,s]= rand.randrange(50, 250)
+    #Note the order of the output
+    output = [out_mat, out_valid]
     return output
 
