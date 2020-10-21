@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as func
 import numpy as np
 
+from AI_IDS.parsing_scripts.random_input import random_input
+
 
 def num_flat_features(z):
     # All dimensions except the batch dimension
@@ -27,15 +29,17 @@ class Net(nn.Module):
     # C{i} - Num of convolution channels
     # S{i} - Size of convolution matrix
     # T{i} - size of maxPooling layer matrix
-    C = np.array([6,  16,  6,  16, 6, 16])
-    S = np.array([3,   4,  5,   3, 4, 5])
-    T = np.array([2,   2,  2,   2, 2, 2])
+    # D{i} - size of dense layer
+    C = np.array([32,  64])
+    S = np.array([[4, 6, 12], [2, 3, 18]])
+    T = np.array([3, 3])
+    D = np.array([1024, 5])
     
     # These are changed based on how the images are made
     # from packets of data.
-    # Current image size used in the project is 32x48.
-    input_channels = 3
-    #image_dimension = 32
+    # Current stream size used in the project is 32x48x100.
+    # input_channels = 3
+    # image_dimension = 32
     mtu = 1514
     cols = 32
     packets = 100
@@ -44,90 +48,91 @@ class Net(nn.Module):
     def __init__(self):     
         super(Net, self).__init__()
         
-        # Define the convolution functions:
-        # 4 convolutions are used, 2 for each vector
-        self.conv1_1 = nn.Conv3d(Net.input_channels, Net.C[0], Net.S[0])
-        self.conv1_2 = nn.Conv3d(Net.C[0], Net.C[1], Net.S[1])
-        self.conv1_3 = nn.Conv3d(Net.C[1], Net.C[2], Net.S[2])
-        self.conv2_1 = nn.Conv3d(Net.input_channels, Net.C[2], Net.S[2])
-        self.conv2_2 = nn.Conv3d(Net.C[2], Net.C[3], Net.S[3])
-        self.conv2_3 = nn.Conv3d(Net.C[3], Net.C[4], Net.S[4])
+        # Define the layers up to the dense functions:
+        # 6 convolutions are used, 2 for each vector
+        self.conv_lay1_1 = nn.Conv3d(Net.packets, Net.C[0], Net.S[0], stride = 1)
+        self.relu_lay1_1 = nn.ReLU()
+        self.max_pool2_1 = nn.MaxPool3d(Net.T[0])
+        self.conv_lay3_2 = nn.Conv3d(Net.C[0], Net.C[1], Net.S[1], stride=1)
+        self.relu_lay3_2 = nn.ReLU()
+        self.max_pool4_2 = nn.MaxPool3d(Net.T[1])
 
-        
         # A convolution matrix scales the image down by (matrix size) - 1;
         conv_reduction = (Net.S - 1)
-        
+
         # First convolution reduction
-        size_1 = Net.rows - conv_reduction[0]
-        size_2 = Net.cols - conv_reduction[2]
-        size_3 = Net.packets - conv_reduction[4]
+        size_1 = Net.rows - conv_reduction[0, 0]
+        size_2 = Net.cols - conv_reduction[0, 1]
+        size_3 = Net.packets - conv_reduction[0, 2]
         # First Max pooling reduction
         # P.S. make sure the result is even for easier living
         size_1 //= Net.T[0]
-        size_2 //= Net.T[2]
-        size_3 //= Net.T[4]
+        size_2 //= Net.T[0]
+        size_3 //= Net.T[0]
         # Second convolution reduction
-        size_1 -= conv_reduction[1]
-        size_2 -= conv_reduction[3]
-        size_3 -= conv_reduction[5]
+        size_1 -= conv_reduction[1, 0]
+        size_2 -= conv_reduction[1, 1]
+        size_3 -= conv_reduction[1, 2]
         # Second Max pooling reduction
         # P.S. make sure the result is even for easier living        
         size_1 //= Net.T[1]
-        size_2 //= Net.T[3]
-        size_3 //= Net.T[5]
-        
+        size_2 //= Net.T[1]
+        size_3 //= Net.T[1]
+
         # Final size for the linear vector reduction process
         # The size needs to be x * y * final channels
         size_1 = (size_1 ** 2) * Net.C[1]
-        size_2 = (size_2 ** 2) * Net.C[3]
-        size_3 = (size_3 ** 2) * Net.C[5]
+        size_2 = (size_2 ** 2) * Net.C[1]
+        size_3 = (size_3 ** 2) * Net.C[1]
         # First linear reduction
-        self.fc1_1 = nn.Linear(size_1, size_1 // 2)
-        self.fc2_1 = nn.Linear(size_2, size_2 // 2)
-        self.fc3_1 = nn.Linear(size_3, size_3 // 2)
+        self.fc1_1 = nn.Linear(size_1 // 4, size_1 // 16)
+        self.fc2_1 = nn.Linear(size_2 // 4, size_2 // 16)
+        self.fc3_1 = nn.Linear(size_3 // 4, size_3 // 16)
         # Second linear reduction
-        self.fc1_2 = nn.Linear(size_1 // 2, size_1 // 4)
-        self.fc2_2 = nn.Linear(size_2 // 2, size_2 // 4)
-        self.fc3_2 = nn.Linear(size_3 // 2, size_3 // 4)
+        self.fc1_2 = nn.Linear(size_1 // 16, size_1 // 32)
+        self.fc2_2 = nn.Linear(size_2 // 16, size_2 // 32)
+        self.fc3_2 = nn.Linear(size_3 // 16, size_3 // 32)
 
         # Final linear reduction reduces us to a [false, positive] vector
-        self.fc1_3 = nn.Linear(size_1 // 4, 2)
-        self.fc2_3 = nn.Linear(size_2 // 4, 2)
-        self.fc3_3 = nn.Linear(size_3 // 4, 2)
+        self.fc1_3 = nn.Linear(size_1 // 32, 2)
+        self.fc2_3 = nn.Linear(size_2 // 32, 2)
+        self.fc3_3 = nn.Linear(size_3 // 32, 2)
 
     def forward(self, z):
-        
+        z = torch.tensor(z)
         # relu(x) -> max{x,0}
-        
+        print("tensor")
         # Conv -> relu -> pool -> conv -> relu -> pool
-        x = func.max_pool2d(func.relu(self.conv1_1(z)), Net.T[0])
-        x = func.max_pool2d(func.relu(self.conv1_2(x)), Net.T[1])
+        X = self.max_pool2_1(self.relu_lay1_1(self.conv_lay1_1(z)), Net.T[0])
+        X = self.max_pool4_2(self.relu_lay3_2(self.conv_lay3_2(X)), Net.T[1])
 
-        y = func.max_pool2d(func.relu(self.conv2_1(z)), Net.T[2])
-        y = func.max_pool2d(func.relu(self.conv2_2(y)), Net.T[3])
+        Y = self.max_pool2_1(self.relu_lay1_1(self.conv_lay1_1(z)), Net.T[0])
+        Y = self.max_pool4_2(self.relu_lay3_2(self.conv_lay3_2(Y)), Net.T[1])
 
-        z = func.max_pool2d(func.relu(self.conv1_3(z)), Net.T[4])
-        z = func.max_pool2d(func.relu(self.conv2_3(z)), Net.T[5])
+        Z = self.max_pool2_1(self.relu_lay3_2(self.conv_lay3_2(z)), Net.T[1])
+        Z = self.max_pool4_2(self.relu_lay1_1(self.conv_lay1_1(Z)), Net.T[0])
 
         # Turn the matrices into long vectors
-        x = x.view(1, num_flat_features(x))
-        y = y.view(1, num_flat_features(y))
-        z = z.view(1, num_flat_features(z))
+        X = X.view(1, num_flat_features(X))
+        Y = Y.view(1, num_flat_features(Y))
+        Z = Z.view(1, num_flat_features(Z))
         # Reduce the vectors
-        x = func.relu(self.fc1_1(x))
-        x = func.relu(self.fc1_2(x))
-        x = self.fc1_3(x)
+        X = func.relu(self.fc1_1(X))
+        X = func.relu(self.fc2_1(X))
+        X = self.fc3_1(X)
         
-        y = func.relu(self.fc2_1(y))
-        y = func.relu(self.fc2_2(y))
-        y = self.fc2_3(y)
+        Y = func.relu(self.fc1_2(Y))
+        Y = func.relu(self.fc2_2(Y))
+        Y = self.fc3_2(Y)
 
-        z = func.relu(self.fc3_1(z))
-        z = func.relu(self.fc3_2(z))
-        z = self.fc3_3(z)
+        Z = func.relu(self.fc1_3(Z))
+        Z = func.relu(self.fc2_3(Z))
+        Z = self.fc3_3(Z)
 
-        return x + y + z
+        return X + Y + Z
 
 
 net = Net()
 print(net)
+
+epoches = 1000;
