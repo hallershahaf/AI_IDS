@@ -143,7 +143,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
 
 
-train_dir = os.path.join(os.getcwd()[:-6], "Dataset")
+train_dir = os.path.join(os.getcwd(), "Dataset")
 train_set = ds.create_dataset(train_dir, "eOs.npy")
 train_loader = udata.DataLoader(train_set)
 
