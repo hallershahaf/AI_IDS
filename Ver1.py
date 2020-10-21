@@ -6,8 +6,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as func
+import torch.utils.data as udata
+import torch.optim as optim
 import numpy as np
-
+import AI_IDS.create_dataset as ds
+import os
 from AI_IDS.parsing_scripts.random_input import random_input
 
 
@@ -50,7 +53,7 @@ class Net(nn.Module):
         
         # Define the layers up to the dense functions:
         # 6 convolutions are used, 2 for each vector
-        self.conv_lay1_1 = nn.Conv3d(Net.packets, Net.C[0], Net.S[0], stride = 1)
+        self.conv_lay1_1 = nn.Conv3d(Net.packets, Net.C[0], Net.S[0], stride=1)
         self.relu_lay1_1 = nn.ReLU()
         self.max_pool2_1 = nn.MaxPool3d(Net.T[0])
         self.conv_lay3_2 = nn.Conv3d(Net.C[0], Net.C[1], Net.S[1], stride=1)
@@ -135,4 +138,35 @@ class Net(nn.Module):
 net = Net()
 print(net)
 
-epoches = 1000;
+epoches = 10
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
+
+
+train_dir = os.path.join(os.getcwd()[:-6], "Dataset")
+train_set = ds.create_dataset(train_dir, "eOs.npy")
+train_loader = udata.DataLoader(train_set)
+
+for epoch in range(epoches):  # loop over the dataset multiple times
+
+    running_loss = 0.0
+    for i, data in enumerate(train_loader, 0):
+        # get the inputs; data is a list of [inputs, labels]
+        inputs, labels = data
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = net(data[inputs])
+        loss = criterion(outputs, data[labels])
+        loss.backward()
+        optimizer.step()
+
+        # print statistics
+        running_loss += loss.item()
+        if i % 2 == 1:    # print every 2 mini-batches
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss / 2))
+            running_loss = 0.0
+
+print('Finished Training')
