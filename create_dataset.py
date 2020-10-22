@@ -6,7 +6,8 @@ import os
 class BluekeepDataset (Dataset):
     def __init__(self, root_dir, eos_file, transform=None):
         self.root_dir = root_dir
-        self.streams = os.listdir(root_dir)
+        # Ignore last file, it is EOS
+        self.streams = os.listdir(root_dir)[:-1]
         self.exp_or_safe = np.load(os.path.join(root_dir, eos_file))
         self.transform = transform
 
@@ -24,9 +25,8 @@ class BluekeepDataset (Dataset):
 
         stream_id = os.path.join(self.root_dir, self.streams[idx])
         stream = np.load(stream_id)
-        stream_eos = np.zeros(2)    # This place creates problems
-        stream_eos[self.exp_or_safe] = 1
-        stream_eos = stream_eos.astype('float')
+        # TODO change this part to support mini batches
+        stream_eos = np.array(self.exp_or_safe[idx], 'long')
         sample = {'stream': stream, 'EoS': stream_eos}
 
         if self.transform:

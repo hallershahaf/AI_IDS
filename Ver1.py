@@ -121,7 +121,8 @@ class Net(nn.Module):
         y = func.relu(self.fc2_2(y))
         y = self.fc2_3(y)
 
-        return x + y
+        # Divide by 2 to normalize
+        return (x + y) / 2
 
 
 net = Net()
@@ -133,7 +134,7 @@ net = net.float()
 epochs = 10
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
-
+softmax = nn.Softmax2d()
 
 train_dir = os.path.join(os.getcwd(), "Dataset")
 train_set = ds.create_dataset(train_dir, "eOs.npy")
@@ -143,19 +144,20 @@ for epoch in range(epochs):  # loop over the dataset multiple times
 
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):
-        # get the inputs; data is a list of [inputs, labels]
+        # Get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
         # zero the parameter gradients
         optimizer.zero_grad()
 
-        # forward + backward + optimize
+        # Forward + backward + optimize
         # The system needs to run on a single type or bad things happen
-        outputs = net(data[inputs].float())
-        loss = criterion(outputs, data[labels])
+        outputs = net(softmax(data[inputs].float()))
+        # Labels are of type Long, not float
+        loss = criterion(outputs, data[labels].long())
         loss.backward()
         optimizer.step()
 
-        # print statistics
+        # Print statistics
         running_loss += loss.item()
         if i % 2 == 1:    # print every 2 mini-batches
             print('[%d, %5d] loss: %.3f' %
