@@ -1,6 +1,6 @@
 def random_input(vect_length, exp_probe):
     import numpy as np
-    import random as rand
+    import os
 
     """Globals"""
     # P = practice
@@ -10,8 +10,8 @@ def random_input(vect_length, exp_probe):
     packets = 100
     rows = int(np.ceil(mtu / cols))
 
-    """Create desicion vector"""
-    exp_or_safe = np.random.choice([0,1], size = vect_length, p = [1 - exp_probe, exp_probe] )
+    """Create decision vector"""
+    exp_or_safe = np.random.choice([0, 1], size = vect_length, p = [1 - exp_probe, exp_probe] )
     """Define output
     ################################################
     Each packet is 2-D matrix.
@@ -21,23 +21,28 @@ def random_input(vect_length, exp_probe):
     
     # Note: The output order is output = [out_mat, out_valid]
     """
-    out_mat = np.zeros((rows, cols, packets, vect_length))
+    out_mat = np.zeros((vect_length, packets, rows, cols))
     out_valid = exp_or_safe
 
     """Create "exploit" data """
-    for s in range(vect_length):
+    for s in range(len(exp_or_safe)):
         if exp_or_safe[s] == 1:
             for p in range(packets):
                 for r in range(rows):
                     for c in range(cols):
-                        out_mat[r,c,p,s]= rand.randrange(0, 255)
-            """Create "safe" data """
-        elif exp_or_safe[s]:
+                        out_mat[s,p,r,c]= np.random.randint(0, 255)
+    #Create "safe" data
+        elif exp_or_safe[s] == 0:
             for p in range(packets):
                 for r in range(rows):
                     for c in range(cols):
-                        out_mat[r,c,p,s]= rand.randrange(50, 250)
+                        out_mat[s,p,r,c]= np.random.randint(50, 250)
     #Note the order of the output
     output = [out_mat, out_valid]
+    # Saves the output to files for the dataset
+    os.makedirs("Dataset")
+    for s in range(len(exp_or_safe)):
+        np.save(os.path.join("Dataset", str(s)), out_mat[s])
+    np.save(os.path.join("Dataset", "eOs"), out_valid)
     return output
 

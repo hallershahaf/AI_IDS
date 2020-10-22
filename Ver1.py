@@ -10,7 +10,7 @@ import torch.optim as optim
 import numpy as np
 import create_dataset as ds
 import os
-from random_input import random_input
+from parsing_scripts.random_input import random_input
 
 
 def num_flat_features(z):
