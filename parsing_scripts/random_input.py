@@ -11,7 +11,7 @@ def random_input(vect_length, exp_probe):
     rows = int(np.ceil(mtu / cols))
 
     """Create decision vector"""
-    exp_or_safe = np.random.choice([0, 1], size = vect_length, p = [1 - exp_probe, exp_probe] )
+    exp_or_safe = np.random.choice([0, 1], size=vect_length, p=[1 - exp_probe, exp_probe])
     """Define output
     ################################################
     Each packet is 2-D matrix.
@@ -30,14 +30,14 @@ def random_input(vect_length, exp_probe):
             for p in range(packets):
                 for r in range(rows):
                     for c in range(cols):
-                        out_mat[s,p,r,c]= np.random.randint(0, 255)
-    #Create "safe" data
+                        out_mat[s, p, r, c] = np.random.randint(0, 255)
+    # Create "safe" data
         elif exp_or_safe[s] == 0:
             for p in range(packets):
                 for r in range(rows):
                     for c in range(cols):
-                        out_mat[s,p,r,c]= np.random.randint(50, 250)
-    #Note the order of the output
+                        out_mat[s, p, r, c] = np.random.randint(50, 250)
+    # Note the order of the output
     output = [out_mat, out_valid]
     # Saves the output to files for the dataset
     os.makedirs("Dataset")
@@ -45,4 +45,3 @@ def random_input(vect_length, exp_probe):
         np.save(os.path.join("Dataset", str(s)), out_mat[s])
     np.save(os.path.join("Dataset", "eOs"), out_valid)
     return output
-

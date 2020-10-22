@@ -41,7 +41,7 @@ class Net(nn.Module):
     # Current image size used in the project is 32x48.
     mtu = 1514
     cols = 32
-    rows = int(np.ceil(mtu/cols))
+    rows = int(np.ceil(mtu/cols))   # 48
     input_channels = 100    # Number of packets per stream
 
     def __init__(self):     
@@ -49,7 +49,6 @@ class Net(nn.Module):
         
         # Define the convolution functions:
         # 4 convolutions are used, 2 for each vector.
-        # conv_i_j -> j convolution for path i.
         self.conv1_1 = nn.Conv2d(Net.input_channels, Net.C[0], Net.S[0])
         self.conv1_2 = nn.Conv2d(Net.C[0], Net.C[1], Net.S[1])
         self.conv2_1 = nn.Conv2d(Net.input_channels, Net.C[2], Net.S[2])
@@ -128,6 +127,9 @@ class Net(nn.Module):
 net = Net()
 print(net)
 
+# The system needs to run on a single type or bad things happen
+net = net.float()
+
 epochs = 10
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
@@ -147,7 +149,8 @@ for epoch in range(epochs):  # loop over the dataset multiple times
         optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = net(data[inputs])
+        # The system needs to run on a single type or bad things happen
+        outputs = net(data[inputs].float())
         loss = criterion(outputs, data[labels])
         loss.backward()
         optimizer.step()
