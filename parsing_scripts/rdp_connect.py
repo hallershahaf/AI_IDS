@@ -1,6 +1,7 @@
 import os
-#TODO make the code suituble for ubuntu terminal rdp to windows (maybe via metasploit)
+# TODO make the code suitable for ubuntu terminal rdp to windows (maybe via metasploit)
+
 
 def rdp_connect(ip_addr):
-    commnd = "mstsc /control /admin /V:" + str(ip_addr)
-    os.system(commnd)
+    cmd = "mstsc /control /admin /V:" + str(ip_addr)
+    os.system(cmd)

@@ -1,2 +1,0 @@
- - Ver1.py doesn't work with images that are not square
- 
