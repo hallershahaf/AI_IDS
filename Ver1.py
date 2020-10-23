@@ -3,6 +3,7 @@
 # CNN module based on https://ieeexplore.ieee.org/document/8171733
 # "Algorithm 1 Spatial Feature Learning" - HAST_I
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as func
 import torch.utils.data as udata
@@ -10,7 +11,6 @@ import torch.optim as optim
 import numpy as np
 import create_dataset as ds
 import os
-from parsing_scripts.random_input import random_input
 
 
 def num_flat_features(z):
@@ -125,22 +125,28 @@ class Net(nn.Module):
         return (x + y) / 2
 
 
+verbose = False
+verbose_step = 25
 net = Net()
 print(net)
 
 # The system needs to run on a single type or bad things happen
 net = net.float()
 
-epochs = 10
+epochs = 10  # TODO change epochs back to big number
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
-softmax = nn.Softmax2d()
+optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9)
+softmax = nn.Softmax(dim=1)
 
 train_dir = os.path.join(os.getcwd(), "Dataset")
-train_set = ds.create_dataset(train_dir, "eOs.npy")
+train_set = ds.create_dataset(train_dir, "EoS.npy")
 train_loader = udata.DataLoader(train_set)
 
+
 for epoch in range(epochs):  # loop over the dataset multiple times
+
+    correct = 0
+    total = 0
 
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):
@@ -151,17 +157,27 @@ for epoch in range(epochs):  # loop over the dataset multiple times
 
         # Forward + backward + optimize
         # The system needs to run on a single type or bad things happen
-        outputs = net(softmax(data[inputs].float()))
+        output = softmax(net(data[inputs].float()))
+        # Verbose 1 - results vs expected
+        if verbose:
+            print(output[0].detach(), " -> ", int(data[labels][0]))
+        # Verbose 2 - percentage
+        total += 1
+        if torch.max(output, 1)[1] == data[labels].long():
+            correct += 1
         # Labels are of type Long, not float
-        loss = criterion(outputs, data[labels].long())
+        loss = criterion(output, data[labels].long())
         loss.backward()
         optimizer.step()
 
         # Print statistics
         running_loss += loss.item()
-        if i % 2 == 1:    # print every 2 mini-batches
+        if i % verbose_step == 0 and verbose:    # print every 2 mini-batches
             print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 2))
+                  (epoch + 1, i, running_loss / verbose_step))
             running_loss = 0.0
+
+    print("Percentage ->", (correct / total) * 100, "%")
+    optimizer.param_groups[0]['lr'] = optimizer.param_groups[0]['lr'] * 0.3
 
 print('Finished Training')
