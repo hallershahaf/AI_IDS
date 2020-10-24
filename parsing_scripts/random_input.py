@@ -33,12 +33,10 @@ def random_input(vect_length, exp_probe):
         if s % 10 == 0:
             print("Current progress -> ", s)
         if exp_or_safe[s] == 1:
-            # out_mat[s] = (nrand.rand(100, 48, 32) * 127).astype('int')
-            out_mat[s] = np.ones((100, 48, 32))
+            out_mat[s] = (nrand.rand(100, 48, 32) * 127).astype('int')
     # Create "safe" data
         elif exp_or_safe[s] == 0:
-            # out_mat[s] = (nrand.rand(100, 48, 32) * 127).astype('int') + 127
-            out_mat[s] = np.zeros((100, 48, 32))
+            out_mat[s] = (nrand.rand(100, 48, 32) * 127).astype('int') + 127
     # Note the order of the output
     output = [out_mat, out_valid]
     # Saves the output to files for the dataset
