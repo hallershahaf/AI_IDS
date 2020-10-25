@@ -20,7 +20,7 @@ def random_input(num_of_classes, vector_length, depth, rows, cols):
     # Meaning: out_mat = [rows of packet,cols of packet, diff packets, diff streams]
     
     # Note: The output order is output = [out_mat, out_valid]
-    out_mat = np.zeros((vector_length, depth, rows, cols))
+    out_mat = np.zeros((vector_length, depth, rows, cols), dtype=np.float32)
     out_valid = class_labels
 
     # Create random data
@@ -28,7 +28,7 @@ def random_input(num_of_classes, vector_length, depth, rows, cols):
         # Print progress
         if (s + 1) % 10 == 0:
             print("Current progress -> ", s + 1)
-        out_mat[s] = np.ones((depth, rows, cols)) * class_labels[s]
+        out_mat[s] = np.ones((depth, rows, cols), dtype=np.float32) * class_labels[s]
 
     # Note the order of the output
     output = [out_mat, out_valid]
