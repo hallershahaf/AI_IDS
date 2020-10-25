@@ -1,4 +1,5 @@
 import numpy as np
+import natsort
 from torch.utils.data import Dataset
 import os
 
@@ -7,7 +8,8 @@ class BluekeepDataset (Dataset):
     def __init__(self, root_dir, eos_file, transform=None):
         self.root_dir = root_dir
         # Ignore last file, it is EOS
-        self.streams = os.listdir(root_dir)[:-1]
+        # Sort them so the order will be 0 1 2 3 4 and not 0 1 10 100
+        self.streams = natsort.natsorted(os.listdir(root_dir)[:-1])
         self.exp_or_safe = np.load(os.path.join(root_dir, eos_file))
         self.transform = transform
 
@@ -24,11 +26,9 @@ class BluekeepDataset (Dataset):
             raise Exception("Please use one of the following data-type: list, np.array / matrix, torch.tensor")
 
         stream_id = os.path.join(self.root_dir, self.streams[idx])
-        stream = np.load(stream_id)
-        # TODO change this part to support mini batches
+        stream = np.load(stream_id).astype(np.float32)
         stream_eos = np.array(self.exp_or_safe[idx], dtype=np.int64)
-        sample = {'stream': stream, 'EoS': stream_eos}
-
+        sample = [stream, stream_eos]
         if self.transform:
             sample = self.transform(sample)
 
