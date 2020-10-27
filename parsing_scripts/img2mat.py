@@ -1,13 +1,16 @@
-def img2mat(sing_or_mult, bin_or_txt):
-    """Imports"""
-    import numpy as np
-    import os
+import numpy as np
+import os
 
-    """Globals"""
+def img2mat(sing_or_mult, bin_or_txt):
+    """
+    Transform an image to matrix
+    """
+
+    #Globals
     mtu = 1514
     cols = 32
     rows = int(np.ceil(mtu / cols))
-    """find all packet files"""
+    #find all packet files
     files = IO()
     all_files = os.listdir(files.in_dir)
     pack_files = []
@@ -19,7 +22,7 @@ def img2mat(sing_or_mult, bin_or_txt):
     images = len(pack_files)
     # pre-parsing status
     print("found ", str(images), " files")
-    """"create variables from the files"""
+    #create variables from the files
     # Single file mode
     if sing_or_mult.lower() == "s":
         # Only Binary file mode

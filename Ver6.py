@@ -1,4 +1,4 @@
-# Fifth version - our type of dataset
+# Sixth version - transform Net to HAST I and HAST II
 import os
 import AI_IDS.create_dataset_v2 as dataset
 
@@ -19,21 +19,33 @@ transform = transforms.Compose(
 # pytorch_trainloader = torch.utils.data.DataLoader(pytorch_trainset, batch_size=4,
 #                                           shuffle=True, num_workers=0)
 
-train_dir = os.path.join(os.getcwd()[:-6], "Dataset")
+# train_dir = os.path.join(os.getcwd()[:-6], "Dataset")
+# train_set = dataset.create_dataset(train_dir, "EoS.npy")
+# trainloader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=0)
+train_dir = os.path.join(os.getcwd()[:-6], "HIST_I_TRAIN")
 train_set = dataset.create_dataset(train_dir, "EoS.npy")
 trainloader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=0)
-test_dir = os.path.join(os.getcwd()[:-6], "Datatest")
+
+test_dir = os.path.join(os.getcwd()[:-6], "HIST_I_TEST")
 test_set = dataset.create_dataset(test_dir, "EoS.npy")
 testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=0)
 
 
+# test_dir = os.path.join(os.getcwd()[:-6], "Datatest")
+# test_set = dataset.create_dataset(test_dir, "EoS.npy")
+# testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=0)
+
 classes = ('safe', 'exploit')
+
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(100, 100, 8)     # 100 Channels
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(100, 16, 8)
+        self.fc1 = nn.Linear(16 * 3 * 4, 120)
+        self.fc2 = nn.Linear(120, 84)
         self.fc1 = nn.Linear(16 * 3 * 4, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 2)     # Changed to 2 classes
@@ -48,7 +60,28 @@ class Net(nn.Module):
         return x
 
 
-net = Net()
+class HAST_I(nn.Module):
+    def __init__(self):
+        super(HAST_I, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 8)     # 100 Channels
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(32, 4, 4)
+        self.fc1 = nn.Linear(25472, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 2)     # Changed to 2 classes
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 25472)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+# Training the NN
+
+net = HAST_I()
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(net.parameters(), lr=0.001, momentum=0.9)
