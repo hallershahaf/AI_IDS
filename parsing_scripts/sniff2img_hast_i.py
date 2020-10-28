@@ -21,26 +21,32 @@ def sniff2img(sniff_file):
     #at the end of this block, tmp holds the data
     """
 
-    tmp = []
-    parsed = packets.split('0x')
-
+    p_bytes = packets.split("\\r\\n")
+    parsed = []
     i = 0
-    while i < len(parsed) - 1:
-        if re.search('\.', parsed[i]):
+    p = 0
+    while i < len(p_bytes) - 1:
+        if bool(re.search('IP', p_bytes[i])):
             i += 1
-            data = ''
-            while not (re.search('\.', parsed[i])) and i < len(parsed) - 1:
-                parsed[i] = re.sub(r'\\n.*$', '', parsed[i])
-                parsed[i] = parsed[i][7:]
-                parsed[i] = re.sub(r'[^\w]', '', parsed[i])
-                data = data + parsed[i]
-                i += 1
-            tmp.append(data)
+            p += 1
+            data = ""
+            while not bool(re.search('IP', p_bytes[i])) and i <= len(p_bytes) - 1 and len(p_bytes[i]) > 1:
+                tmp = re.sub("^.*0x.*:  ", '', p_bytes[i])
+                tmp = tmp[0:re.search('  .*$', tmp).start()]
+                tmp = re.sub(r'[^\w]', '', tmp)
+                data = data + tmp
+                if i == len(p_bytes) - 1:
+                    break
+                else:
+                    i += 1
+            parsed.append(data)
+
     """
     create images
     #creates a 3d matrix where each matrix is an image of a packet
     at the end of this block, parsed holds the parsed images
     """
+    tmp = parsed
     packets = len(tmp)
     # pre-converting status
     print("found ", str(packets), " packets")
@@ -59,7 +65,7 @@ def sniff2img(sniff_file):
                     if r * cols + 2 * c > packet_size - 1:
                         break
                     else:
-                        parsed[r, c + (p * packets)] = int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
+                        parsed[r, c + (p * cols)] = int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
         # mid-converting status
         print("finished ", str(p + 1), " packets of ", str(packets))
     """
