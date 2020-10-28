@@ -1,7 +1,9 @@
 import re
 import numpy as np
+import os
 
-def sniff2img(sniff_file):
+
+def sniff2img(sniff_file, out_file):
     """Reads hex dump of tcpdump and transform to images shaped fo HAST I NN"""
     # Globals
     files = IO()
@@ -12,7 +14,8 @@ def sniff2img(sniff_file):
 
     # reading hex
     # Read sniff
-    in_file = files.in_dir + "\\" + sniff_file
+    # in_file = files.in_dir + "\\" + sniff_file
+    in_file = sniff_file
     with open(str(in_file), 'rb') as sniff:
         packets = str(sniff.read())
     """
@@ -47,7 +50,8 @@ def sniff2img(sniff_file):
     at the end of this block, parsed holds the parsed images
     """
     tmp = parsed
-    packets = len(tmp)
+    # packets = len(tmp)
+    packets = 100
     # pre-converting status
     print("found ", str(packets), " packets")
 
@@ -67,12 +71,13 @@ def sniff2img(sniff_file):
                     else:
                         parsed[r, c + (p * cols)] = int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
         # mid-converting status
-        print("finished ", str(p + 1), " packets of ", str(packets))
+        # print("finished ", str(p + 1), " packets of ", str(packets))
     """
     saves the parsed images to a file
     """
-    print("saving")
-    f_name = files.out_dir + "\\" + "packet_all"
+    # print("saving ", out_file)
+    # f_name = os.path.join(files.out_dir, out_file)
+    f_name = out_file
     np.save(f_name, parsed)
 
 
