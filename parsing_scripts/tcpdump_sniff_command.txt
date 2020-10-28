@@ -1,1 +1,1 @@
- tcpdump -i <interface> -XX -c 100 port 80 > <file_name>
+ tcpdump -i <interface> -XX -c 100 port <chose port> > <file_name>
