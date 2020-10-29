@@ -12,7 +12,7 @@ def create_pretrain_data(is_exploit, file_name):
 
     Note
     -----
-    If running in windows, requires  microlap tcpdump saved at C:\microlap_tcpdump\\tcpdump.exe
+    If running in windows, requires  microlap tcpdump saved at C:\\microlap_tcpdump\\tcpdump.exe
     """
 
     # Creating the request
@@ -24,21 +24,20 @@ def create_pretrain_data(is_exploit, file_name):
 
     # Starting the sniff
     if os.name == 'nt':
-        proc = subprocess.Popen(["C:\microlap_tcpdump\\tcpdump.exe", "-i", "9", "-XX", "-c", "100", "port", "80",
-                          save_command], shell=True, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(["C:\\microlap_tcpdump\\tcpdump.exe", "-i", "9", "-XX", "-c", "100", "port", "80",
+                                 save_command], shell=True, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.STDOUT)
     else:
         proc = subprocess.Popen(["tcpdump", "-i", "9", "-XX", "-c", "100", "port", "80",
-                          save_command], shell=True, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.STDOUT)
+                                 save_command], shell=True, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.STDOUT)
     # Sending get requests
-    if is_exploit:
-        while proc.poll() == None:
+    while proc.poll() is None:
+        if is_exploit:
             for s in sites:
                 requests.get(s, values)
-    else:
-        if is_exploit:
-            while proc.poll() == None:
-                for s in sites:
-                    requests.get(s)
+        else:
+            for s in sites:
+                requests.get(s)
+
     # print("Finished creating ", file_name)

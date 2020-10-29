@@ -1,12 +1,12 @@
 import re
 import numpy as np
-import os
+# import os
 
 
 def sniff2img(sniff_file, out_file):
     """Reads hex dump of tcpdump and transform to images shaped fo HAST I NN"""
     # Globals
-    files = IO()
+    # files = IO()
     # Size of images in pixels
     mtu = 1514
     cols = 32
@@ -29,11 +29,11 @@ def sniff2img(sniff_file, out_file):
     i = 0
     p = 0
     while i < len(p_bytes) - 1:
-        if bool(re.search('IP', p_bytes[i])):
+        if bool(re.search('\d IP ', p_bytes[i])):
             i += 1
             p += 1
             data = ""
-            while not bool(re.search('IP', p_bytes[i])) and i <= len(p_bytes) - 1 and len(p_bytes[i]) > 1:
+            while not bool(re.search('\d IP ', p_bytes[i])) and i <= len(p_bytes) - 1 and len(p_bytes[i]) > 1:
                 tmp = re.sub("^.*0x.*:  ", '', p_bytes[i])
                 tmp = tmp[0:re.search('  .*$', tmp).start()]
                 tmp = re.sub(r'[^\w]', '', tmp)
@@ -43,6 +43,7 @@ def sniff2img(sniff_file, out_file):
                 else:
                     i += 1
             parsed.append(data)
+    # print("Found ", str(p), " packets")
 
     """
     create images
@@ -50,10 +51,11 @@ def sniff2img(sniff_file, out_file):
     at the end of this block, parsed holds the parsed images
     """
     tmp = parsed
-    # packets = len(tmp)
-    packets = 100
+    packets = len(tmp)
     # pre-converting status
-    print("found ", str(packets), " packets")
+    # print("found ", str(packets), " packets")
+    if packets != 100:
+        print("Found only ", str(packets), " packets")
 
     parsed = np.full((rows, cols * packets), 255)
     # i = image
