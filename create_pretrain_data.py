@@ -16,7 +16,9 @@ def create_pretrain_data(is_exploit, file_name):
     """
 
     # Creating the request
-    sites = ["http://www.walla.co.il:80", "http://www.ynet.co.il:80", "http://www.google.com:80"]
+    sites = ["http://www.walla.co.il:80", "http://www.ynet.co.il:80", "http://13news.co.il:80",
+             "http://www.mako.co.il:80", "http://www.google.com:80", "http://bing.com:80", "http://www.yandex.com:80",
+             "http://www.swisscows.com:80", "http://search.creativecommons.org/:80", "http://duckduckgo.com:80"]
     values = {'name': 'AI_IDS project',
               'location': 'Technion',
               'language': 'Python'}
