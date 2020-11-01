@@ -22,12 +22,17 @@ def create_pretrain_dataset(stream_num, ratio, folder_name):
 
     # Create the output folder
     if os.path.exists(folder_name):
-        shutil.rmtree(folder_name)
+        delete = str(input("Are you sure you want to delete " + folder_name + ": [y/n]"))
+        if delete.lower() == 'y':
+            shutil.rmtree(folder_name)
+        else:
+            exit()
     os.makedirs(folder_name)
     dest_dir = os.path.join(os.getcwd(), folder_name)
 
     # Sniffing the data
     eos = np.random.choice([0, 1], size=stream_num, p=[1 - ratio, ratio])
+    np.save(os.path.join(dest_dir, "EoS"), eos)
     file_names = []
     print("Sniffing")
     for s in range(stream_num):
@@ -38,16 +43,17 @@ def create_pretrain_dataset(stream_num, ratio, folder_name):
             cpd(True, file_name)
         # print(file_name)
         file_names.append(file_name)
+        s2i(file_name, file_name[:-4])
         print(str(s+1), " of ", str(stream_num))
 
-    # Converting the sniffs to images
-    print("\nConverting to images")
-    for s in range(stream_num):
-        s2i(file_names[s], file_names[s][:-4])
-        print(str(s + 1), " of ", str(stream_num))
-
-    # Save the EoS file
-    np.save(os.path.join(dest_dir, "EoS"), eos)
+    # # Converting the sniffs to images
+    # print("\nConverting to images")
+    # for s in range(stream_num):
+    #     s2i(file_names[s], file_names[s][:-4])
+    #     print(str(s + 1), " of ", str(stream_num))
+    #
+    # # Save the EoS file
+    # np.save(os.path.join(dest_dir, "EoS"), eos)
 
     # Calculates the time delta
     finish_time = datetime.datetime.now()
