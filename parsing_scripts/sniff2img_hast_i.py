@@ -17,7 +17,7 @@ def sniff2img(sniff_file, out_file):
     # Read sniff
     # in_file = files.in_dir + "\\" + sniff_file
     in_file = sniff_file
-    with open(str(in_file), 'r') as sniff:
+    with open(str(in_file), 'r', errors='ignore') as sniff:
         packets = str(sniff.read())
     """
     parsing sniff   
@@ -29,6 +29,7 @@ def sniff2img(sniff_file, out_file):
         is_scapy = True
     else:
         is_scapy = False
+
     if not is_scapy:
         p_bytes = packets.split("\n")
         parsed = []

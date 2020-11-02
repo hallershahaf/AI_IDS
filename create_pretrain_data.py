@@ -2,7 +2,7 @@ import requests
 import subprocess
 import os
 from scapy import sendrecv
-from scapy.all import sr1, IP
+from scapy.all import sr1
 import scapy.layers.http
 
 
@@ -54,8 +54,8 @@ def create_pretrain_data(is_exploit, scapy_tcpdump, file_name):
             proc = subprocess.Popen([sniff_command, script_path, "True"], shell=True, stdout=subprocess.DEVNULL,
                                     stderr=subprocess.STDOUT)
         else:
-            proc = subprocess.Popen([sniff_command, script_path, "False"], shell=True)  # , stdout=subprocess.DEVNULL,
-            # stderr=subprocess.STDOUT)
+            proc = subprocess.Popen([sniff_command, script_path, "False"], shell=True , stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT)
 
         sniff = sendrecv.sniff(filter="port 80", count=20)
     else:
@@ -80,7 +80,6 @@ def create_pretrain_data(is_exploit, scapy_tcpdump, file_name):
 
     # preparse packets for scapy
     if scapy_tcpdump.lower() == "s":
-        print("parsing")
         chosen_packets = []
         for i in range(len(sniff)):
             if ((str(sniff[i].payload.payload.payload.payload)[2:6]) == "POST") \
@@ -89,10 +88,12 @@ def create_pretrain_data(is_exploit, scapy_tcpdump, file_name):
             elif ((str(sniff[i].payload.payload.payload.payload)[2:5]) == "GET") \
                     and not is_exploit:
                 chosen_packets.append(sniff[i].original.hex())
-        output_data = "SCAPY\n----\n"
-        for i in range(len(chosen_packets)):
-            output_data = output_data + str(chosen_packets) + "\n"
-            output_data = output_data + "----\n"
-        with open(os.path.join(os.getcwd(), file_name), "w") as f:
-            f.write(output_data)
-        return sniff
+        if len(chosen_packets) == 0:
+            create_pretrain_data(is_exploit, scapy_tcpdump, file_name)
+        else:
+            output_data = "SCAPY\n----\n"
+            for i in range(len(chosen_packets)):
+                output_data = output_data + str(chosen_packets) + "\n"
+                output_data = output_data + "----\n"
+            with open(os.path.join(os.getcwd(), file_name), "w") as f:
+                f.write(output_data)

@@ -6,7 +6,7 @@ import shutil
 import datetime
 
 
-def create_pretrain_dataset(stream_num, ratio, folder_name):
+def create_pretrain_dataset(stream_num, ratio, scapy_or_tcpdump,folder_name):
     """
     Create dateset to pretrain the NN where:
     *HTTP/get = safe
@@ -38,9 +38,9 @@ def create_pretrain_dataset(stream_num, ratio, folder_name):
     for s in range(stream_num):
         file_name = os.path.join(dest_dir, str(s) + ".txt")
         if eos[s] == 0:
-            cpd(False, file_name)
+            cpd(False, scapy_or_tcpdump.lower(), file_name)
         else:
-            cpd(True, file_name)
+            cpd(True, scapy_or_tcpdump.lower(), file_name)
         # print(file_name)
         file_names.append(file_name)
         s2i(file_name, file_name[:-4])
