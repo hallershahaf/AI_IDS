@@ -76,7 +76,8 @@ def sniff2img(sniff_file, out_file):
     # parse only 128 packets
     depth = 128
 
-    parsed = np.full((1, rows, cols * depth), 255)
+    # parsed = np.full((1, rows, cols * depth), 255)
+    parsed = np.zeros((1, rows, cols * depth))
     # i = image
     # r = rows
     # c = cols
