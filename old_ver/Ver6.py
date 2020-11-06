@@ -1,4 +1,4 @@
-# Sixth version - transform Net to HAST I and HAST II
+# Sixth version - transform Net to HAST I
 import os
 import AI_IDS.create_dataset_v2 as dataset
 
@@ -19,21 +19,23 @@ transform = transforms.Compose(
 # pytorch_trainloader = torch.utils.data.DataLoader(pytorch_trainset, batch_size=4,
 #                                           shuffle=True, num_workers=0)
 
-# train_dir = os.path.join(os.getcwd()[:-6], "Dataset")
-# train_set = dataset.create_dataset(train_dir, "EoS.npy")
-# trainloader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=0)
-train_dir = os.path.join(os.getcwd()[:-6], "HIST_I_TRAIN")
+train_dir = os.path.join(os.getcwd()[:-6], "Dataset_HAST_I_0")
 train_set = dataset.create_dataset(train_dir, "EoS.npy")
-trainloader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=0)
+trainloader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=0)
 
-test_dir = os.path.join(os.getcwd()[:-6], "HIST_I_TEST")
+test_dir = os.path.join(os.getcwd()[:-6], "Datatest_HAST_I_0")
 test_set = dataset.create_dataset(test_dir, "EoS.npy")
-testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=0)
+testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=True, num_workers=0)
 
-
-# test_dir = os.path.join(os.getcwd()[:-6], "Datatest")
+# train_dir = os.path.join(os.getcwd()[:-6], "pretrain")
+# train_set = dataset.create_dataset(train_dir, "EoS.npy")
+# trainloader = torch.utils.data.DataLoader(train_set, batch_size=10, shuffle=True, num_workers=0)
+#
+# test_dir = os.path.join(os.getcwd()[:-6], "pretest")
 # test_set = dataset.create_dataset(test_dir, "EoS.npy")
 # testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=0)
+
+
 
 classes = ('safe', 'exploit')
 
@@ -63,17 +65,17 @@ class Net(nn.Module):
 class HAST_I(nn.Module):
     def __init__(self):
         super(HAST_I, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 8)     # 100 Channels
+        self.conv1 = nn.Conv2d(1, 128, 32)     # 128 Channels
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 4, 4)
-        self.fc1 = nn.Linear(25472, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 2)     # Changed to 2 classes
+        self.conv2 = nn.Conv2d(128, 32, 4)
+        self.fc1 = nn.Linear(64896, 128)
+        self.fc2 = nn.Linear(128, 32)
+        self.fc3 = nn.Linear(32, 2)     # Changed to 2 classes
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 25472)
+        x = x.view(-1, 64896)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -86,7 +88,7 @@ net = HAST_I()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(net.parameters(), lr=0.001, momentum=0.9)
 
-for epoch in range(4):  # loop over the dataset multiple times
+for epoch in range(10):  # loop over the dataset multiple times
 
     running_loss = 0.0
     correct = 0
@@ -118,6 +120,10 @@ for epoch in range(4):  # loop over the dataset multiple times
             running_loss = 0.0
 
 print('Finished Training')
+
+# Saving state
+print('Saving state')
+torch.save(net.state_dict(), os.path.join(os.getcwd(), "../metasploit_post-training_NN/NN_post_training_HAST_I_10_e"))
 
 # Testing the NN
 print('Starting Test')
