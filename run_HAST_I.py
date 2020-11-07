@@ -1,7 +1,6 @@
 # Run HAST I from an outside class
-
-# self made functions and classes
 import os
+# self made functions and classes
 import AI_IDS.create_dataset_v2 as dataset
 from AI_IDS.HAST_I_NN import HAST_I
 
@@ -25,7 +24,7 @@ train_dir = os.path.join(os.getcwd()[:-6], "Dataset_HAST_I_0")
 train_set = dataset.create_dataset(train_dir, "EoS.npy")
 trainloader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=0)
 
-test_dir = os.path.join(os.getcwd()[:-6], "Datatest_HAST_I_0")
+test_dir = os.path.join(os.getcwd()[:-6], "Datatest_HAST_I_0xeb&safe")
 test_set = dataset.create_dataset(test_dir, "EoS.npy")
 testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=True, num_workers=0)
 
@@ -42,7 +41,8 @@ transform = transforms.Compose(
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
 # Training the NN
-for epoch in range(10):  # loop over the dataset multiple times
+epochs = 5
+for epoch in range(epochs):  # loop over the dataset multiple times
 
     running_loss = 0.0
     correct = 0
@@ -74,8 +74,14 @@ for epoch in range(10):  # loop over the dataset multiple times
 print('Finished Training')
 
 # Saving state
-# print('Saving state')
-# torch.save(net.state_dict(), os.path.join(os.getcwd(), "../metasploit_post-training_NN/NN_post_training_HAST_I_10_e"))
+print('Saving state')
+torch.save({
+            'epoch': epochs,
+            'model_state_dict': net.state_dict(),
+            'optimizer_state_dict':optimizer.state_dict(),
+            'loss': loss
+            }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_5_e"))
+
 
 # Testing the NN
 print('Starting Test')
