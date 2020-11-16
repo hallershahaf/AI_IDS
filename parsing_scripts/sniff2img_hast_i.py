@@ -4,7 +4,7 @@ import re
 # import os
 
 
-def sniff2img(sniff_file, out_file):
+def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
     """Reads hex dump of tcpdump and transform to images shaped fo HAST I NN"""
     # Globals
     # files = IO()
@@ -42,7 +42,10 @@ def sniff2img(sniff_file, out_file):
                 data = ""
                 while not bool(re.search('\d IP ', p_bytes[i])) and i <= len(p_bytes) - 1 and len(p_bytes[i]) > 1:
                     tmp = re.sub("^.*0x.*:  ", '', p_bytes[i])
-                    tmp = tmp[0:re.search('  .*$', tmp).start()]
+                    try:
+                        tmp = tmp[0:re.search('  .*$', tmp).start()]
+                    except:
+                        tmp = tmp
                     tmp = re.sub(r'[^\w]', '', tmp)
                     data = data + tmp
                     if i == len(p_bytes) - 1:
@@ -67,21 +70,35 @@ def sniff2img(sniff_file, out_file):
     #creates a 3d matrix where each matrix is an image of a packet
     at the end of this block, parsed holds the parsed images
     """
+    if shift_stream.lower() == "l":
+        start_i = packets2move
+        last_i = stream_length
+        movement = -1
+    elif shift_stream.lower() == "r":
+        start_i = 0
+        last_i = stream_length - packets2move
+        movement = 1
+    else:
+        start_i = 0
+        last_i = stream_length
+        movement = 0
+
     tmp = parsed
     packets = len(tmp)
     # pre-converting status
     # print("found ", str(packets), " packets")
-    if packets != 128:
+    if packets < stream_length:
         print("Found ", str(packets), " packets")
+        exit()
     # parse only 128 packets
-    depth = 128
+    depth = stream_length
 
     # parsed = np.full((1, rows, cols * depth), 255)
     parsed = np.zeros((1, rows, cols * depth))
     # i = image
     # r = rows
     # c = cols
-    for p in range(min(depth, packets)):
+    for p in range(start_i, last_i):
         packet_size = len(tmp[p])
         for r in range(rows):
             if r * cols > packet_size - 1:
@@ -91,7 +108,7 @@ def sniff2img(sniff_file, out_file):
                     if r * cols + 2 * c > packet_size - 1:
                         break
                     else:
-                        parsed[0, r, c + (p * cols)] = int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
+                        parsed[0, r, c + ((p + movement * packets2move) * cols)] = int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
         # mid-converting status
         # print("finished ", str(p + 1), " packets of ", str(packets))
     """
