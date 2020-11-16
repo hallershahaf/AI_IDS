@@ -1,5 +1,5 @@
 import numpy as np
-from AI_IDS.create_pretrain_data import create_pretrain_data as cpd
+from AI_IDS.Create_Pretrain.create_pretrain_data import create_pretrain_data as cpd
 from AI_IDS.parsing_scripts.sniff2img_hast_i import sniff2img as s2i
 import os
 import shutil

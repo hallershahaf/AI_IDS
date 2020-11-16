@@ -36,7 +36,7 @@ def create_pretrain_data(is_exploit, scapy_tcpdump, file_name):
             sniff_command = "tcpdump"
     else:
         sniff_command = "C:\\Users\\idant\\anaconda3\\python.exe"
-        script_path = "C:\\Users\\idant\\Desktop\\sign_project\\GIT\\AI_IDS\\http_requests.py"
+        script_path = "/Dataset/Create_Pretrain/http_requests.py"
     if scapy_tcpdump.lower() == "t":
         if is_exploit:
             proc = subprocess.Popen([sniff_command, "-i", "9", "-XX", "-c", "128", "dst", "port", "80",

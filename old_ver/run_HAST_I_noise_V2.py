@@ -37,7 +37,9 @@ classes = ('safe', 'exploit')
 net = HAST_I()
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.RMSprop(net.parameters(), lr=0.001, momentum=0.9)
+# optimizer = optim.RMSprop(net.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
 
 transform = transforms.Compose(
     [transforms.ToTensor(),
@@ -70,7 +72,7 @@ for epoch in range(epochs):  # loop over the dataset multiple times
         optimizer.zero_grad()
 
         # Add noise + move the images
-        if epoch == 0 :
+        if epoch == 0:
             cropped_inputs = inputs[:, :, :, 0:4096]
         else:
             cropped_inputs = inputs[:, :, :, (cols * ((epoch % 3) + 1)):((packets * cols) + (cols * ((epoch % 3) + 1)))]
@@ -106,14 +108,14 @@ for epoch in range(epochs):  # loop over the dataset multiple times
 
 print('Finished Training')
 
-# # Saving state
-# print('Saving state')
-# torch.save({
-#             'epoch': epochs,
-#             'model_state_dict': net.state_dict(),
-#             'optimizer_state_dict':optimizer.state_dict(),
-#             'loss': loss
-#             }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_6_e_V2"))
+# Saving state
+print('Saving state')
+torch.save({
+            'epoch': epochs,
+            'model_state_dict': net.state_dict(),
+            'optimizer_state_dict':optimizer.state_dict(),
+            'loss': loss
+            }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_6_e_V2"))
 
 
 # Printing the Statistics

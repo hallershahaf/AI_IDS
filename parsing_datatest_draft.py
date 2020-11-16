@@ -6,10 +6,10 @@ safe_dir = os.listdir("../Dataset/safe")
 
 for f in range(len(exploit_dir)):
     sniff2img(os.path.join("../Dataset/exploit", exploit_dir[f]), os.path.join("../Dataset/exploit_parsed_big", str(f)), 132, "n", 0)
-    print("finished",f)
+    print("finished", f)
 for f in range(len(safe_dir)):
     sniff2img(os.path.join("../Dataset/safe", safe_dir[f]), os.path.join("../Dataset/safe_parsed_big", str(f + len(exploit_dir))), 132, "o", 0)
-    print("finished",f)
+    print("finished", f)
     
 ####################################################################################################################################
 import os

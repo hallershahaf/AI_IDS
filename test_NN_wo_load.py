@@ -22,6 +22,7 @@ def test_wo_load(dir_name, state_dict):
     # Run the test
     correct = 0
     total = 0
+    net.eval()
     with torch.no_grad():
         for data in testloader:
             images, labels = data
