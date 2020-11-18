@@ -28,13 +28,13 @@ net = HAST_I()
 criterion = nn.CrossEntropyLoss()
 # optimizer = optim.RMSprop(net.parameters(), lr=0.001, momentum=0.9)
 optimizer = optim.SGD(net.parameters(), lr=0.001, weight_decay=0)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.9)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.5)
 transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
 # NN Variables definition
-epochs = 2
+epochs = 10
 packets = 128
 mtu = 1514
 cols = 32
@@ -118,16 +118,13 @@ torch.save({
 print("Printings statistics")
 # Defining the plots
 train_accuracy_precision = accuracy_check_step / batch_per_epoch
-print(train_accuracy_precision)
-print(len(Datatrain_accuracy))
-print(len(Datatrain_accuracy) / batch_per_epoch)
 plt.plot(np.arange(1, len(Datatest_100_accuracy) + 1), Datatest_100_accuracy, label="100% similar", marker='o')
 plt.plot(np.arange(1, len(Datatest_75_accuracy) + 1), Datatest_75_accuracy, label="75% similar", marker='o')
 plt.plot(np.arange(1, len(Datatest_50_accuracy) + 1), Datatest_50_accuracy, label="50% similar", marker='o')
 plt.plot(np.arange(1, len(Datatest_25_accuracy) + 1), Datatest_25_accuracy, label="25% similar", marker='o')
-# plt.plot(np.arange(0, (batch_per_epoch / Datatrain_accuracy) + train_accuracy_precision, train_accuracy_precision),
-#          Datatrain_accuracy, "k--", label="Datatrain accuracy")
-
+plt.plot(np.arange(train_accuracy_precision, (len(Datatrain_accuracy) * train_accuracy_precision) +
+                   train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
+         label="Datatrain accuracy")
 # Defining the grids
 plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
 plt.xticks(np.arange(1, epochs + 1, 1))
