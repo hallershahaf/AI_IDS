@@ -1,5 +1,6 @@
 # Run HAST I with noises + creating a graph for datatest accuracy for each epoch
 import os
+from datetime import datetime as time
 # self made functions and classes
 import AI_IDS.create_dataset_v2 as dataset
 from AI_IDS.HAST_I_NN import HAST_I
@@ -14,126 +15,187 @@ import matplotlib.ticker as mtick
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Defining the data for the NN
-batch_size = 64
-train_dir = os.path.join(os.getcwd(), "..", "Dataset_HAST_I_0_big")  # The location of the Dataset folder
-train_set = dataset.create_dataset(train_dir, "EoS.npy")  # Creating the dataset
-trainloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
-
-classes = ('safe', 'exploit')  # 0 = safe, 1 = exploit
-
-# Defining the NN
-# The lr, momentum and transform are based on pytorch example
-net = HAST_I()
-criterion = nn.CrossEntropyLoss()
-# optimizer = optim.RMSprop(net.parameters(), lr=0.001, momentum=0.9)
-optimizer = optim.SGD(net.parameters(), lr=0.001, weight_decay=0)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.5)
+# Normalization stuffs
 transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
+# Measure time so we can compare
+start = time.now()
+
+# Defining the data for the NN
+# 50% meta, 25% Remmina, 25% RDesktop
+train_dir_50_25_25 = os.path.join(os.getcwd(), "..", "Datatrain/Train_50_25_25")  # The location of the Dataset folder
+train_set_50_25_25 = dataset.create_dataset(train_dir_50_25_25, "EoS.npy")  # Creating the dataset
+# 50% meta, 50% Remmina
+train_dir_50_50 = os.path.join(os.getcwd(), "..", "Datatrain/Train_50_50")  # The location of the Dataset folder
+train_set_50_50 = dataset.create_dataset(train_dir_50_50, "EoS.npy")  # Creating the dataset
+train_sets = [train_set_50_50, train_set_50_25_25]
+
+classes = ('safe', 'exploit')  # 0 = safe, 1 = exploit
+
+# Send to GPU if available
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Defining the NN
+# We create a dummy net for the parameters.
+net = HAST_I()
+criterion = nn.CrossEntropyLoss()
+
 # NN Variables definition
+batch_size = 1
+noise_values = [0, 1, 3, 5]
 epochs = 10
-packets = 128
+packets = 100
 mtu = 1514
 cols = 32
 rows = int(np.ceil(mtu / cols))
-extra_packets = 3
-samples = len(os.listdir(train_dir))
+samples = len(os.listdir(train_dir_50_50))
 batch_per_epoch = np.ceil(samples / batch_size)
-accuracy_check_step = 4
+accuracy_check_step = 100
 
-# List of accuracy results for different test sets and through the training.
-# Used for the print statistics part at the end
-Datatest_100_accuracy = []
-Datatest_75_accuracy = []
-Datatest_50_accuracy = []
-Datatest_25_accuracy = []
-Datatrain_accuracy = []
+for current_noise in noise_values:
+    noise_string = str(current_noise)
+    for train_set in train_sets:
+        trainloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
+        set_string = "50_25_25" if train_set == train_set_50_25_25 else "50_50"
+        for optimizer in [0, 1]:
+            # We need to reset the net between runs
+            # So delete to clear from GPU and send again
+            del net
+            net = HAST_I().to(device)
 
-# Training the NN
-for epoch in range(epochs):  # loop over the dataset multiple times
-    print("epoch = ", str(epoch))
-    print("lr = ", scheduler.get_last_lr()[0])
-    running_loss = 0.0
-    correct_train = 0
-    total_train = 0
-    for i, data in enumerate(trainloader, 0):
-        # get the inputs; data is a list of [inputs, labels]
-        inputs, labels = data
+            if optimizer == 0:
+                opt = optim.RMSprop(net.parameters(), lr=0.001, weight_decay=0)
+                opt_string = "RMS"
+            else:
+                opt = optim.SGD(net.parameters(), lr=0.001, weight_decay=0)
+                opt_string = "SGD"
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
+            print("Running", set_string, opt_string, noise_string)
 
-        # Move the stream at random amount of packets. The indentation of the stream is in the range [0, 3]
-        indent = np.random.randint(0, extra_packets + 1)
-        cropped_inputs = inputs[:, :, :, (cols * (indent + 1)):((packets * cols) + (cols * (indent + 1)))]
+            scheduler = optim.lr_scheduler.StepLR(opt, step_size=2, gamma=0.5)
 
-        # forward + backward + optimize
-        outputs = net(cropped_inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+            # List of accuracy results for different test sets.
+            # Used to create statistics at the end of a run
+            Datatest_100_accuracy = []
+            Datatest_75_accuracy = []
+            Datatest_50_accuracy = []
+            Datatest_25_accuracy = []
+            Datatrain_accuracy = []
 
-        # calculate statistics
-        _, predicted_train = torch.max(outputs.data, 1)
-        total_train += labels.size(0)
-        correct_train += (predicted_train == labels).sum().item()
-        running_loss += loss.item()
-        # print statistics after each batch of samples
+            for epoch in range(epochs):  # loop over the dataset multiple times
+                before = time.now()
+                running_loss = 0.0
+                correct_train = 0
+                total_train = 0
+                for i, data in enumerate(trainloader, 0):
+                    # get the inputs; data is a list of [inputs, labels]
+                    inputs, labels = data
 
-        if i % accuracy_check_step == accuracy_check_step - 1:  # print every accuracy_check_step mini-batches
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 4))
-            accuracy_train = 100.0 * correct_train / total_train
-            Datatrain_accuracy.append(accuracy_train)
-            print('accuracy = %.2f %%' % accuracy_train)
-            running_loss = 0.0
+                    # zero the parameter gradients
+                    opt.zero_grad()
 
-    # Validation after each epoch
-    net.eval()
-    with torch.no_grad():
-        Datatest_100_accuracy.append(twol("Datatest_HAST_I_0", net.state_dict()))
-        Datatest_75_accuracy.append(twol("Datatest_HAST_I_diff_safe&safe", net.state_dict()))
-        Datatest_50_accuracy.append(twol("Datatest_HAST_I_0xeb&safe", net.state_dict()))
-        Datatest_25_accuracy.append(twol("Datatest_HAST_I_0xeb&safe&diff_safe", net.state_dict()))
-    net.train()
+                    # Move the stream at random amount of packets.
+                    indent = np.random.randint(0, current_noise + 1)
 
-    # update lr
-    scheduler.step()
+                    cropped_inputs = (inputs[:, :, :, (cols * (indent + 1)):((packets * cols)
+                                                                             + (cols * (indent + 1)))]).to(device)
 
-print('Finished Training')
+                    # forward + backward + optimize
+                    # NOTE - outputs will be in GPU without implicit transfer from us
+                    outputs = net(cropped_inputs)
 
-# Saving NN state
-print('Saving state')
-torch.save({
-    'epoch': epochs,
-    'model_state_dict': net.state_dict(),
-    'optimizer_state_dict': optimizer.state_dict(),
-    'loss': loss
-}, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_6_e_V2"))
+                    # GPU has limited memory, we need to clear as soon as we can
+                    del cropped_inputs
+                    torch.cuda.empty_cache()
 
-# Printing the Statistics graph
-print("Printings statistics")
-# Defining the plots
-train_accuracy_precision = accuracy_check_step / batch_per_epoch
-plt.plot(np.arange(1, len(Datatest_100_accuracy) + 1), Datatest_100_accuracy, label="100% similar", marker='o')
-plt.plot(np.arange(1, len(Datatest_75_accuracy) + 1), Datatest_75_accuracy, label="75% similar", marker='o')
-plt.plot(np.arange(1, len(Datatest_50_accuracy) + 1), Datatest_50_accuracy, label="50% similar", marker='o')
-plt.plot(np.arange(1, len(Datatest_25_accuracy) + 1), Datatest_25_accuracy, label="25% similar", marker='o')
-plt.plot(np.arange(train_accuracy_precision, (len(Datatrain_accuracy) * train_accuracy_precision) +
-                   train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
-         label="Datatrain accuracy")
-# Defining the grids
-plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
-plt.xticks(np.arange(1, epochs + 1, 1))
-# Creating labels and titles
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.title('Accuracy Vs. Epochs - SGD')
-plt.legend()
-# Saving and showing the plot
-plot_name = "Accuracy Vs epochs for" + str(epochs) + " SGD.png"
-plt.savefig(os.path.join(os.getcwd(), plot_name))
-# plt.show()
+                    # Only labels is not in GPU yet, lets YEET it over
+                    labels = labels.to(device)
+
+                    loss = criterion(outputs, labels)
+                    loss.backward()
+                    opt.step()
+
+                    # calculate statistics
+                    _, predicted_train = torch.max(outputs.data, 1)
+                    total_train += labels.size(0)
+                    correct_train += (predicted_train == labels).sum().item()
+                    running_loss += loss.item()
+                    # print statistics after each batch of samples
+
+                    # GPU has limited memory, we need to clear as soon as we can
+                    del labels
+                    del outputs
+                    torch.cuda.empty_cache()
+
+                    # print every accuracy_check_step mini-batches
+                    if i % accuracy_check_step == accuracy_check_step - 1:
+                        print('[%d, %5d] loss: %.3f' %
+                              (epoch + 1, i + 1, running_loss / 4))
+                        accuracy_train = 100.0 * correct_train / total_train
+                        Datatrain_accuracy.append(accuracy_train)
+                        print('accuracy = %.2f %%' % accuracy_train)
+                        running_loss = 0.0
+
+                # Validation after each epoch
+                net.eval()
+                with torch.no_grad():
+                    Datatest_100_accuracy.append(twol("Datatest/Test100", net))
+                    Datatest_75_accuracy.append(twol("Datatest/Test75", net))
+                    Datatest_50_accuracy.append(twol("Datatest/Test50", net))
+                    Datatest_25_accuracy.append(twol("Datatest/Test25", net))
+                net.train()
+
+                # update lr
+                scheduler.step()
+
+                after = time.now()
+                print("Time for epoch : ", after - before)
+
+            print('Finished Training current configuration')
+
+            """
+            # Saving NN state
+            print('Saving state')
+            torch.save({
+                'epoch': epochs,
+                'model_state_dict': net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss
+            }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_V3_50_25_25"))
+            """
+
+            # Printing the Statistics graph
+            print("Printings statistics")
+            # Defining the plots
+            train_accuracy_precision = accuracy_check_step / batch_per_epoch
+            plt.plot(np.arange(1, len(Datatest_100_accuracy) + 1), Datatest_100_accuracy,
+                     label="50% old exp, 50% old RDP", marker='o')
+            plt.plot(np.arange(1, len(Datatest_75_accuracy) + 1), Datatest_75_accuracy,
+                     label="50% old exp, 25% old/new RDP", marker='o')
+            plt.plot(np.arange(1, len(Datatest_50_accuracy) + 1), Datatest_50_accuracy,
+                     label="50% new exp, 50% old RDP", marker='o', linestyle='dashdot')
+            plt.plot(np.arange(1, len(Datatest_25_accuracy) + 1), Datatest_25_accuracy,
+                     label="50% new exp, 25% old/new RDP", marker='o', linestyle='dotted')
+            # plt.plot(np.arange(train_accuracy_precision, (len(Datatrain_accuracy) * train_accuracy_precision) +
+            #                   train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
+            #         label="Datatrain accuracy")
+            # Defining the grids
+            plot_name = opt_string + "_" + noise_string + "noise_" + set_string
+            plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
+            plt.xticks(np.arange(1, epochs + 1, 1))
+            # Creating labels and titles
+            plt.ylabel('Accuracy')
+            plt.xlabel('Epoch')
+            plt.title(plot_name)
+            plt.legend()
+            plt.ylim(0, 100)
+            # Saving and showing the plot
+            plt.savefig(os.path.join(os.getcwd() + "/../Graphs", plot_name))
+            plt.close()
+            # Showing the plt stops the code until exiting the graph
+            # plt.show()
+
+end = time.now()
+print("Total running time is", end - start)
