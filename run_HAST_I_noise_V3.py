@@ -41,7 +41,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # NN Variables definition
 batch_size = 1
-noise_values = [0, 1, 3, 5]
+noise_values = [0]  #[0, 1, 3, 5]
 epochs = 10
 packets = 192
 mtu = 1514
