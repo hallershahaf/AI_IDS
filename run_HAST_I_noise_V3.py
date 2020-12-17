@@ -25,10 +25,10 @@ start = time.now()
 
 # Defining the data for the NN
 # 50% meta, 25% Remmina, 25% RDesktop
-train_dir_50_25_25 = os.path.join(os.getcwd(), "..", "Datatest_HAST_I_diff_safe&safe")  # The location of the Dataset folder
+train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25")  # The location of the Dataset folder
 train_set_50_25_25 = dataset.create_dataset(train_dir_50_25_25, "EoS.npy")  # Creating the dataset
 # 50% meta, 50% Remmina
-train_dir_50_50 = os.path.join(os.getcwd(), "..", "Dataset_50-50")  # The location of the Dataset folder
+train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50")  # The location of the Dataset folder
 train_set_50_50 = dataset.create_dataset(train_dir_50_50, "EoS.npy")  # Creating the dataset
 train_sets = [train_set_50_50, train_set_50_25_25]
 
@@ -38,15 +38,12 @@ classes = ('safe', 'exploit')  # 0 = safe, 1 = exploit
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Defining the NN
-# We create a dummy net for the parameters.
-net = HAST_I()
-criterion = nn.CrossEntropyLoss()
 
 # NN Variables definition
 batch_size = 1
 noise_values = [0, 1, 3, 5]
 epochs = 10
-packets = 100
+packets = 192
 mtu = 1514
 cols = 32
 rows = int(np.ceil(mtu / cols))
@@ -56,6 +53,10 @@ accuracy_check_step = 100
 max_reattempts = 2
 reattempts = 0
 valid_output = False
+
+# We create a dummy net for the parameters.
+net = HAST_I(packets)
+criterion = nn.CrossEntropyLoss()
 
 while reattempts < max_reattempts and not valid_output:
     for current_noise in noise_values:
@@ -67,7 +68,7 @@ while reattempts < max_reattempts and not valid_output:
                 # We need to reset the net between runs
                 # So delete to clear from GPU and send again
                 del net
-                net = HAST_I().to(device)
+                net = HAST_I(packets).to(device)
 
                 if optimizer == 0:
                     opt = optim.RMSprop(net.parameters(), lr=0.001, weight_decay=0)
@@ -108,7 +109,7 @@ while reattempts < max_reattempts and not valid_output:
 
                         # forward + backward + optimize
                         # NOTE - outputs will be in GPU without implicit transfer from us
-                        outputs = net(cropped_inputs)
+                        outputs = net(cropped_inputs, packets)
 
                         # GPU has limited memory, we need to clear as soon as we can
                         del cropped_inputs
@@ -145,10 +146,10 @@ while reattempts < max_reattempts and not valid_output:
                     # Validation after each epoch
                     net.eval()
                     with torch.no_grad():
-                        Datatest_100_accuracy.append(twol("Datatest/Test100", net))
-                        Datatest_75_accuracy.append(twol("Datatest/Test75", net))
-                        Datatest_50_accuracy.append(twol("Datatest/Test50", net))
-                        Datatest_25_accuracy.append(twol("Datatest/Test25", net))
+                        Datatest_100_accuracy.append(twol("Datatest_100", net))
+                        Datatest_75_accuracy.append(twol("Datatest_75", net))
+                        Datatest_50_accuracy.append(twol("Datatest_50", net))
+                        Datatest_25_accuracy.append(twol("Datatest_25", net))
                     net.train()
 
                     # update lr
