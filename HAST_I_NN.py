@@ -6,7 +6,7 @@ import torch.nn.functional as f
 
 
 class HAST_I(nn.Module, ABC):
-    def __init__(self, packets):
+    def __init__(self, packets, last_packets):
         super(HAST_I, self).__init__()
         self.conv1 = nn.Conv2d(1, 128, 32)  # 128 Channels
         self.pool = nn.MaxPool2d(2, 2)
@@ -15,8 +15,10 @@ class HAST_I(nn.Module, ABC):
             self.fc1 = nn.Linear(97664, 128)
         elif packets == 128:
             self.fc1 = nn.Linear(64896, 128)
-        elif packets == 100:
+        elif packets == 100 and not last_packets:
             self.fc1 = nn.Linear(50560, 128)
+        elif packets == 100 and last_packets:
+            self.fc1 = nn.Linear(50048, 128)
         elif packets == 95:
             self.fc1 = nn.Linear(48000, 128)
         else:
@@ -24,15 +26,17 @@ class HAST_I(nn.Module, ABC):
         self.fc2 = nn.Linear(128, 32)
         self.fc3 = nn.Linear(32, 2)  # Changed to 2 classes
 
-    def forward(self, x, packets):
+    def forward(self, x, packets, last_packets):
         x = self.pool(f.relu(self.conv1(x)))
         x = self.pool(f.relu(self.conv2(x)))
         if packets == 192:
             x = x.view(-1, 97664)
         elif packets == 128:
             x = x.view(-1, 64896)
-        elif packets == 100:
+        elif packets == 100 and not last_packets:
             x = x.view(-1, 50560)
+        elif packets == 100 and last_packets:
+            x = x.view(-1, 50048)
         elif packets == 95:
             x = x.view(-1, 48000)
         else:

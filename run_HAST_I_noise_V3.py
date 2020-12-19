@@ -45,7 +45,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 noise_values = [0, 1, 3, 5]
 epochs = 10
-packets = 95
+packets = 100
 mtu = 1514
 cols = 32
 rows = int(np.ceil(mtu / cols))
@@ -55,9 +55,10 @@ accuracy_check_step = 100
 max_reattempts = 2
 reattempts = 0
 valid_output = False
+last_packets = True
 
 # We create a dummy net for the parameters.
-net = HAST_I(packets)
+net = HAST_I(packets, last_packets)
 criterion = nn.CrossEntropyLoss()
 
 for current_noise in noise_values:
@@ -70,7 +71,7 @@ for current_noise in noise_values:
                 # We need to reset the net between runs
                 # So delete to clear from GPU and send again
                 del net
-                net = HAST_I(packets).to(device)
+                net = HAST_I(packets, last_packets).to(device)
 
                 if optimizer == 0:
                     opt = optim.RMSprop(net.parameters(), lr=0.001, weight_decay=0)
@@ -111,7 +112,7 @@ for current_noise in noise_values:
 
                         # forward + backward + optimize
                         # NOTE - outputs will be in GPU without implicit transfer from us
-                        outputs = net(cropped_inputs, packets)
+                        outputs = net(cropped_inputs, packets, last_packets)
 
                         # GPU has limited memory, we need to clear as soon as we can
                         del cropped_inputs
