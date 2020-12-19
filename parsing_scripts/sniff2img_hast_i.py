@@ -72,7 +72,7 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
     """
     if shift_stream.lower() == "l":
         start_i = packets2move
-        last_i = stream_length
+        last_i = stream_length + stream_length
         movement = -1
     elif shift_stream.lower() == "r":
         start_i = 0
@@ -93,7 +93,6 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
     # parse only 128 packets
     depth = stream_length
 
-    # parsed = np.full((1, rows, cols * depth), 255)
     parsed = np.zeros((1, rows, cols * depth))
     # i = image
     # r = rows
