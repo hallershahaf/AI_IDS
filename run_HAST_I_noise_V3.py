@@ -25,12 +25,10 @@ start = time.now()
 
 # Defining the data for the NN
 # 50% meta, 25% Remmina, 25% RDesktop
-train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25")  # The location of the Dataset folder
-# train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25_l100")  # The location of the Dataset folder
+train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Datatrain\\Train_50_25_25")  # The location of the Dataset folder
 train_set_50_25_25 = dataset.create_dataset(train_dir_50_25_25, "EoS.npy")  # Creating the dataset
 # 50% meta, 50% Remmina
-train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50")  # The location of the Dataset folder
-# train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50_l100")  # The location of the Dataset folder
+train_dir_50_50 = os.path.join(os.getcwd(), "..\\Datatrain\\Train_50_50")  # The location of the Dataset folder
 train_set_50_50 = dataset.create_dataset(train_dir_50_50, "EoS.npy")  # Creating the dataset
 train_sets = [train_set_50_50, train_set_50_25_25]
 
@@ -43,7 +41,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # NN Variables definition
 batch_size = 1
-noise_values = [3] #TODO[0, 1, 3, 5]
+noise_values = [0]  # TODO , 1, 3, 5]
 epochs = 10
 packets = 100
 mtu = 1514
@@ -55,7 +53,9 @@ accuracy_check_step = 100
 max_reattempts = 2
 reattempts = 0
 valid_output = False
-last_packets = False
+last_packets = True
+warning_flag = False
+bad_configs = []
 
 # We create a dummy net for the parameters.
 net = HAST_I(packets, last_packets)
@@ -66,7 +66,9 @@ for current_noise in noise_values:
     for train_set in train_sets:
         trainloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
         set_string = "50_25_25" if train_set == train_set_50_25_25 else "50_50"
-        for optimizer in [0]: #TODO [0, 1]
+        for optimizer in [1]:   # TODO [0,1]
+            valid_output = False
+            reattempts = 0
             while reattempts < max_reattempts and not valid_output:
                 # We need to reset the net between runs
                 # So delete to clear from GPU and send again
@@ -80,7 +82,8 @@ for current_noise in noise_values:
                     opt = optim.SGD(net.parameters(), lr=0.001, weight_decay=0)
                     opt_string = "SGD"
 
-                print("Running", set_string, opt_string, noise_string)
+                current_config_string = set_string + " " + opt_string + " " + noise_string
+                print("Running " + current_config_string)
 
                 scheduler = optim.lr_scheduler.StepLR(opt, step_size=2, gamma=0.5)
 
@@ -149,10 +152,10 @@ for current_noise in noise_values:
                     # Validation after each epoch
                     net.eval()
                     with torch.no_grad():
-                        Datatest_100_accuracy.append(twol("Datatest_100", net, packets, last_packets))
-                        Datatest_75_accuracy.append(twol("Datatest_75", net, packets, last_packets))
-                        Datatest_50_accuracy.append(twol("Datatest_50", net, packets, last_packets))
-                        Datatest_25_accuracy.append(twol("Datatest_25", net, packets, last_packets))
+                        Datatest_100_accuracy.append(twol("Datatest\\Test100", net, packets, last_packets))
+                        Datatest_75_accuracy.append(twol("Datatest\\Test75", net, packets, last_packets))
+                        Datatest_50_accuracy.append(twol("Datatest\\Test50", net, packets, last_packets))
+                        Datatest_25_accuracy.append(twol("Datatest\\Test25", net, packets, last_packets))
                     net.train()
 
                     # update lr
@@ -163,13 +166,13 @@ for current_noise in noise_values:
                 # Check if the output is valid
                 if max(Datatest_100_accuracy) < 75 and max(Datatest_75_accuracy) < 75:
                     reattempts += 1
-                    valid_output = False
                 else:
                     valid_output = True
 
-            # Case of invalid output
             if not valid_output:
-                break
+                warning_flag = True
+                bad_configs = bad_configs + [current_config_string]
+
             print('Finished Training current configuration')
 
             """
@@ -213,15 +216,10 @@ for current_noise in noise_values:
             # Showing the plt stops the code until exiting the graph
             # plt.show()
 
-        # Case of invalid output
-        if not valid_output:
-            break
-    # Case of invalid output
-    if not valid_output:
-        break
-
-if not valid_output:
-    print("Warning!\n--------\nThe output is not valid")
-
 end = time.now()
 print("Total running time is", end - start)
+
+if warning_flag:
+    print("Some configurations had bad outputs:")
+    for string in bad_configs:
+        print("\t*\t" + string)
