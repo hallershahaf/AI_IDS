@@ -149,10 +149,10 @@ for current_noise in noise_values:
                     # Validation after each epoch
                     net.eval()
                     with torch.no_grad():
-                        Datatest_100_accuracy.append(twol("Datatest_100", net, packets))
-                        Datatest_75_accuracy.append(twol("Datatest_75", net, packets))
-                        Datatest_50_accuracy.append(twol("Datatest_50", net, packets))
-                        Datatest_25_accuracy.append(twol("Datatest_25", net, packets))
+                        Datatest_100_accuracy.append(twol("Datatest_100", net, packets, last_packets))
+                        Datatest_75_accuracy.append(twol("Datatest_75", net, packets, last_packets))
+                        Datatest_50_accuracy.append(twol("Datatest_50", net, packets, last_packets))
+                        Datatest_25_accuracy.append(twol("Datatest_25", net, packets, last_packets))
                     net.train()
 
                     # update lr
