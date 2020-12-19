@@ -25,12 +25,12 @@ start = time.now()
 
 # Defining the data for the NN
 # 50% meta, 25% Remmina, 25% RDesktop
-# train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25")  # The location of the Dataset folder
-train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25_l100")  # The location of the Dataset folder
+train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25")  # The location of the Dataset folder
+# train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25_l100")  # The location of the Dataset folder
 train_set_50_25_25 = dataset.create_dataset(train_dir_50_25_25, "EoS.npy")  # Creating the dataset
 # 50% meta, 50% Remmina
-# train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50")  # The location of the Dataset folder
-train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50_l100")  # The location of the Dataset folder
+train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50")  # The location of the Dataset folder
+# train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50_l100")  # The location of the Dataset folder
 train_set_50_50 = dataset.create_dataset(train_dir_50_50, "EoS.npy")  # Creating the dataset
 train_sets = [train_set_50_50, train_set_50_25_25]
 
@@ -43,7 +43,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # NN Variables definition
 batch_size = 1
-noise_values = [0, 1, 3, 5]
+noise_values = [3] #TODO[0, 1, 3, 5]
 epochs = 10
 packets = 100
 mtu = 1514
@@ -55,7 +55,7 @@ accuracy_check_step = 100
 max_reattempts = 2
 reattempts = 0
 valid_output = False
-last_packets = True
+last_packets = False
 
 # We create a dummy net for the parameters.
 net = HAST_I(packets, last_packets)
@@ -66,7 +66,7 @@ for current_noise in noise_values:
     for train_set in train_sets:
         trainloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
         set_string = "50_25_25" if train_set == train_set_50_25_25 else "50_50"
-        for optimizer in [0, 1]:
+        for optimizer in [0]: #TODO [0, 1]
             while reattempts < max_reattempts and not valid_output:
                 # We need to reset the net between runs
                 # So delete to clear from GPU and send again
