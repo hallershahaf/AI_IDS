@@ -17,6 +17,8 @@ class HAST_I(nn.Module, ABC):
             self.fc1 = nn.Linear(64896, 128)
         elif packets == 100:
             self.fc1 = nn.Linear(50560, 128)
+        elif packets == 95:
+            self.fc1 = nn.Linear(48000, 128)
         else:
             raise AttributeError("This amount of packets Haven't been tested")
         self.fc2 = nn.Linear(128, 32)
@@ -31,6 +33,8 @@ class HAST_I(nn.Module, ABC):
             x = x.view(-1, 64896)
         elif packets == 100:
             x = x.view(-1, 50560)
+        elif packets == 95:
+            x = x.view(-1, 48000)
         else:
             raise AttributeError("This amount of packets Haven't been tested")
         x = f.relu(self.fc1(x))

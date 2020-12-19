@@ -25,10 +25,12 @@ start = time.now()
 
 # Defining the data for the NN
 # 50% meta, 25% Remmina, 25% RDesktop
-train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25")  # The location of the Dataset folder
+# train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25")  # The location of the Dataset folder
+train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25_l100")  # The location of the Dataset folder
 train_set_50_25_25 = dataset.create_dataset(train_dir_50_25_25, "EoS.npy")  # Creating the dataset
 # 50% meta, 50% Remmina
-train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50")  # The location of the Dataset folder
+# train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50")  # The location of the Dataset folder
+train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50_l100")  # The location of the Dataset folder
 train_set_50_50 = dataset.create_dataset(train_dir_50_50, "EoS.npy")  # Creating the dataset
 train_sets = [train_set_50_50, train_set_50_25_25]
 
@@ -41,9 +43,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # NN Variables definition
 batch_size = 1
-noise_values = [0]  #[0, 1, 3, 5]
+noise_values = [0, 1, 3, 5]
 epochs = 10
-packets = 192
+packets = 95
 mtu = 1514
 cols = 32
 rows = int(np.ceil(mtu / cols))
@@ -58,13 +60,13 @@ valid_output = False
 net = HAST_I(packets)
 criterion = nn.CrossEntropyLoss()
 
-while reattempts < max_reattempts and not valid_output:
-    for current_noise in noise_values:
-        noise_string = str(current_noise)
-        for train_set in train_sets:
-            trainloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
-            set_string = "50_25_25" if train_set == train_set_50_25_25 else "50_50"
-            for optimizer in [0, 1]:
+for current_noise in noise_values:
+    noise_string = str(current_noise)
+    for train_set in train_sets:
+        trainloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
+        set_string = "50_25_25" if train_set == train_set_50_25_25 else "50_50"
+        for optimizer in [0, 1]:
+            while reattempts < max_reattempts and not valid_output:
                 # We need to reset the net between runs
                 # So delete to clear from GPU and send again
                 del net
@@ -146,10 +148,10 @@ while reattempts < max_reattempts and not valid_output:
                     # Validation after each epoch
                     net.eval()
                     with torch.no_grad():
-                        Datatest_100_accuracy.append(twol("Datatest_100", net))
-                        Datatest_75_accuracy.append(twol("Datatest_75", net))
-                        Datatest_50_accuracy.append(twol("Datatest_50", net))
-                        Datatest_25_accuracy.append(twol("Datatest_25", net))
+                        Datatest_100_accuracy.append(twol("Datatest_100", net, packets))
+                        Datatest_75_accuracy.append(twol("Datatest_75", net, packets))
+                        Datatest_50_accuracy.append(twol("Datatest_50", net, packets))
+                        Datatest_25_accuracy.append(twol("Datatest_25", net, packets))
                     net.train()
 
                     # update lr
@@ -157,60 +159,59 @@ while reattempts < max_reattempts and not valid_output:
 
                     after = time.now()
                     print("Time for epoch : ", after - before)
-
-                print('Finished Training current configuration')
-
-                """
-                # Saving NN state
-                print('Saving state')
-                torch.save({
-                    'epoch': epochs,
-                    'model_state_dict': net.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': loss
-                }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_V3_50_25_25"))
-                """
                 # Check if the output is valid
                 if max(Datatest_100_accuracy) < 75 and max(Datatest_75_accuracy) < 75:
                     reattempts += 1
                     valid_output = False
-                    break
                 else:
                     valid_output = True
-                # Printing the Statistics graph
-                print("Printings statistics")
-                # Defining the plots
-                train_accuracy_precision = accuracy_check_step / batch_per_epoch
-                plt.plot(np.arange(1, len(Datatest_100_accuracy) + 1), Datatest_100_accuracy,
-                         label="50% old exp, 50% old RDP", marker='o')
-                plt.plot(np.arange(1, len(Datatest_75_accuracy) + 1), Datatest_75_accuracy,
-                         label="50% old exp, 25% old/new RDP", marker='o')
-                plt.plot(np.arange(1, len(Datatest_50_accuracy) + 1), Datatest_50_accuracy,
-                         label="50% new exp, 50% old RDP", marker='o', linestyle='dashdot')
-                plt.plot(np.arange(1, len(Datatest_25_accuracy) + 1), Datatest_25_accuracy,
-                         label="50% new exp, 25% old/new RDP", marker='o', linestyle='dotted')
-                # plt.plot(np.arange(train_accuracy_precision, (len(Datatrain_accuracy) * train_accuracy_precision) +
-                #                   train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
-                #         label="Datatrain accuracy")
-                # Defining the grids
-                plot_name = opt_string + "_" + noise_string + "noise_" + set_string
-                plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
-                plt.xticks(np.arange(1, epochs + 1, 1))
-                # Creating labels and titles
-                plt.ylabel('Accuracy')
-                plt.xlabel('Epoch')
-                plt.title(plot_name)
-                plt.legend()
-                plt.ylim(0, 100)
-                # Saving and showing the plot
-                plt.savefig(os.path.join(os.getcwd() + "/../Graphs", plot_name))
-                plt.close()
-                # Showing the plt stops the code until exiting the graph
-                # plt.show()
 
             # Case of invalid output
             if not valid_output:
                 break
+            print('Finished Training current configuration')
+
+            """
+            # Saving NN state
+            print('Saving state')
+            torch.save({
+                'epoch': epochs,
+                'model_state_dict': net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss
+            }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_V3_50_25_25"))
+            """
+            # Printing the Statistics graph
+            print("Printings statistics")
+            # Defining the plots
+            train_accuracy_precision = accuracy_check_step / batch_per_epoch
+            plt.plot(np.arange(1, len(Datatest_100_accuracy) + 1), Datatest_100_accuracy,
+                     label="50% old exp, 50% old RDP", marker='o')
+            plt.plot(np.arange(1, len(Datatest_75_accuracy) + 1), Datatest_75_accuracy,
+                     label="50% old exp, 25% old/new RDP", marker='o')
+            plt.plot(np.arange(1, len(Datatest_50_accuracy) + 1), Datatest_50_accuracy,
+                     label="50% new exp, 50% old RDP", marker='o', linestyle='dashdot')
+            plt.plot(np.arange(1, len(Datatest_25_accuracy) + 1), Datatest_25_accuracy,
+                     label="50% new exp, 25% old/new RDP", marker='o', linestyle='dotted')
+            # plt.plot(np.arange(train_accuracy_precision, (len(Datatrain_accuracy) * train_accuracy_precision) +
+            #                   train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
+            #         label="Datatrain accuracy")
+            # Defining the grids
+            plot_name = opt_string + "_" + noise_string + "noise_" + set_string
+            plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
+            plt.xticks(np.arange(1, epochs + 1, 1))
+            # Creating labels and titles
+            plt.ylabel('Accuracy')
+            plt.xlabel('Epoch')
+            plt.title(plot_name)
+            plt.legend()
+            plt.ylim(0, 100)
+            # Saving and showing the plot
+            plt.savefig(os.path.join(os.getcwd() + "/../Graphs", plot_name))
+            plt.close()
+            # Showing the plt stops the code until exiting the graph
+            # plt.show()
+
         # Case of invalid output
         if not valid_output:
             break

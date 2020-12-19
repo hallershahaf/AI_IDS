@@ -8,7 +8,7 @@ from AI_IDS.HAST_I_NN import HAST_I
 import torch
 
 
-def test_wo_load(dir_name, net):
+def test_wo_load(dir_name, net, packets):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Define Data for the test
@@ -25,7 +25,7 @@ def test_wo_load(dir_name, net):
             images, labels = data[0].to(device), data[1].to(device)
             # print(images.size())
             # print(type(images))
-            outputs = net(images)
+            outputs = net(images, packets)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
