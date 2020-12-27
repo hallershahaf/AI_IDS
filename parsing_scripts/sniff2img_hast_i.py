@@ -72,7 +72,7 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
     """
     if shift_stream.lower() == "l":
         start_i = packets2move
-        last_i = stream_length + stream_length
+        last_i = stream_length + packets2move
         movement = -1
     elif shift_stream.lower() == "r":
         start_i = 0
@@ -117,6 +117,8 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
     # f_name = os.path.join(files.out_dir, out_file)
     f_name = out_file
     np.save(f_name, parsed)
+
+
 """ Defines a class of the input and output source"""
 
 
