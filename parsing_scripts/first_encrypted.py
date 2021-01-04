@@ -41,6 +41,9 @@ def first_encrypted(stream, packets):
                             c_shift += 1
                             cells_checked += 1
                             continue
+                        # Got to the end of a packets
+                        elif r + r_shift >= rows:
+                            break
                         # Check if suits the pattern
                         else:
                             # Fits the pattern
