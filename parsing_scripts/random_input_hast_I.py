@@ -4,7 +4,7 @@ import os
 import shutil
 
 
-def random_input_hast_I(folder_name, vector_length, rows, cols, prob):
+def random_input_hast_i(folder_name, vector_length, rows, cols, prob):
     depth = 100
     num_of_classes = 2
     print("\nCreating", vector_length, "random packets of size [", depth, ",", rows, ", ", cols,

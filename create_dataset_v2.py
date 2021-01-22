@@ -7,8 +7,8 @@ import os
 class BluekeepDataset (Dataset):
     def __init__(self, root_dir, eos_file, transform=None):
         self.root_dir = root_dir
-        # Ignore last file, it is EOS
-        # Sort them so the order will be 0 1 2 3 4 and not 0 1 10 100
+        # Ignore last file, it is EOS (exploit or safe, i.e. labels file)
+        # Sort them so the order will be 0 1 2 3 and not 0 1 10 100
         self.streams = natsort.natsorted(os.listdir(root_dir)[:-1])
         self.exp_or_safe = np.load(os.path.join(root_dir, eos_file))
         self.transform = transform

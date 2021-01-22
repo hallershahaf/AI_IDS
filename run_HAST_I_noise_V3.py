@@ -4,7 +4,7 @@ from datetime import datetime as time
 # self made functions and classes
 import AI_IDS.create_dataset_v2 as dataset
 from AI_IDS.HAST_I_NN import HAST_I
-from AI_IDS.test_NN_wo_load import test_wo_load as twol
+from AI_IDS.test_NN_wo_load import test_wo_load as testNet
 
 # Pytorch imports
 import torch
@@ -20,21 +20,17 @@ transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-# Measure time so we can compare
+# Measure time so we can compare different batch and hardware setups
 start = time.now()
 
-# Defining the data for the NN
-# 50% meta, 25% Remmina, 25% RDesktop
-# train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Datatrain\\Train_50_25_25")  # The location of the Dataset folder
-train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Dataset_50-25-25_l100")  # The location of the Dataset folder
+# Defining the datasets for the NN
+train_dir_50_25_25 = os.path.join(os.getcwd(), "..\\Datatrain\\Train_50_25_25")  # The location of the Dataset folder
 train_set_50_25_25 = dataset.create_dataset(train_dir_50_25_25, "EoS.npy")  # Creating the dataset
-# 50% meta, 50% Remmina
-# train_dir_50_50 = os.path.join(os.getcwd(), "..\\Datatrain\\Train_50_50")  # The location of the Dataset folder
-train_dir_50_50 = os.path.join(os.getcwd(), "..\\Dataset_50-50_l100")  # The location of the Dataset folder
+train_dir_50_50 = os.path.join(os.getcwd(), "..\\Datatrain\\Train_50_50")  # The location of the Dataset folder
 train_set_50_50 = dataset.create_dataset(train_dir_50_50, "EoS.npy")  # Creating the dataset
 train_sets = [train_set_50_50, train_set_50_25_25]
 
-classes = ('safe', 'exploit')  # 0 = safe, 1 = exploit
+# classes = ('safe', 'exploit')  # 0 = safe, 1 = exploit
 
 # Send to GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -42,21 +38,42 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Defining the NN
 
 # NN Variables definition
+###############################################
+# Above 16 starts to bottleneck the GPU VRAM
 batch_size = 1
+# This is to try and avoid overfitting
 noise_values = [0, 1, 3, 5]
-epochs = 1
-packets = 100
+epochs = 10
+
+# We only sniffed 200 packets, so above is currently not supported
+packets = 200
+
+# Generic image definitions
 mtu = 1514
 cols = 32
 rows = int(np.ceil(mtu / cols))
 samples = len(os.listdir(train_dir_50_50))
 batch_per_epoch = np.ceil(samples / batch_size)
-accuracy_check_step = 100
+
+# NN loops aid variables
+accuracy_check_step = 500
 max_reattempts = 2
 reattempts = 0
 valid_output = False
 warning_flag = False
 bad_configs = []
+###############################################
+
+# List of accuracy results for different test sets.
+# Used to create statistics at the end of a run
+Datatest_100_accuracy = []
+Datatest_75_accuracy = []
+Datatest_50_accuracy = []
+Datatest_25_accuracy = []
+Datatrain_accuracy = []
+
+current_config_string = ""
+opt_string = ""
 
 # We create a dummy net for the parameters.
 net = HAST_I(packets)
@@ -87,14 +104,6 @@ for current_noise in noise_values:
                 print("Running " + current_config_string)
 
                 scheduler = optim.lr_scheduler.StepLR(opt, step_size=2, gamma=0.5)
-
-                # List of accuracy results for different test sets.
-                # Used to create statistics at the end of a run
-                Datatest_100_accuracy = []
-                Datatest_75_accuracy = []
-                Datatest_50_accuracy = []
-                Datatest_25_accuracy = []
-                Datatrain_accuracy = []
 
                 for epoch in range(epochs):  # loop over the dataset multiple times
                     before = time.now()
@@ -153,10 +162,10 @@ for current_noise in noise_values:
                     # Validation after each epoch
                     net.eval()
                     with torch.no_grad():
-                        Datatest_100_accuracy.append(twol(".\\Datatest_100_last100", net, packets))
-                        Datatest_75_accuracy.append(twol(".\\Datatest_75_last100", net, packets))
-                        Datatest_50_accuracy.append(twol(".\\Datatest_50_last100", net, packets))
-                        Datatest_25_accuracy.append(twol(".\\Datatest_25_last100", net, packets))
+                        Datatest_100_accuracy.append(testNet(".\\Datatest\\Test100", net, packets))
+                        Datatest_75_accuracy.append(testNet(".\\Datatest\\Test75", net, packets))
+                        Datatest_50_accuracy.append(testNet(".\\Datatest\\Test50", net, packets))
+                        Datatest_25_accuracy.append(testNet(".\\Datatest\\Test25", net, packets))
                     net.train()
 
                     # update lr
@@ -164,6 +173,7 @@ for current_noise in noise_values:
 
                     after = time.now()
                     print("Time for epoch : ", after - before)
+
                 # Check if the output is valid
                 if max(Datatest_100_accuracy) < 75 and max(Datatest_75_accuracy) < 75:
                     reattempts += 1
@@ -176,16 +186,6 @@ for current_noise in noise_values:
 
             print('Finished Training current configuration')
 
-            """
-            # Saving NN state
-            print('Saving state')
-            torch.save({
-                'epoch': epochs,
-                'model_state_dict': net.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': loss
-            }, os.path.join(os.getcwd(), "metasploit_post-training_NN", "NN_post_training_HAST_I_V3_50_25_25"))
-            """
             # Printing the Statistics graph
             print("Printings statistics")
             # Defining the plots
@@ -198,17 +198,19 @@ for current_noise in noise_values:
                      label="50% new exp, 50% old RDP", marker='o', linestyle='dashdot')
             plt.plot(np.arange(1, len(Datatest_25_accuracy) + 1), Datatest_25_accuracy,
                      label="50% new exp, 25% old/new RDP", marker='o', linestyle='dotted')
+
             # plt.plot(np.arange(train_accuracy_precision, (len(Datatrain_accuracy) * train_accuracy_precision) +
-            #                   train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
-            #         label="Datatrain accuracy")
+            #                    train_accuracy_precision, step=train_accuracy_precision), Datatrain_accuracy, "k--",
+            #          label="Datatrain accuracy")
             # Defining the grids
+
             plot_name = opt_string + "_" + noise_string + "noise_" + set_string
             plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
             plt.xticks(np.arange(1, epochs + 1, 1))
             # Creating labels and titles
             plt.ylabel('Accuracy')
             plt.xlabel('Epoch')
-            plt.title(plot_name)
+            plt.title("Encryption only - " + plot_name)
             plt.legend()
             plt.ylim(0, 100)
             # Saving and showing the plot

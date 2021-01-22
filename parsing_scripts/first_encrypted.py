@@ -1,7 +1,7 @@
 # Find the first packets after the last packet containing hex string: [14 03 ?? 00 01 01 16]
 import numpy as np
 
-
+# This module finds the first part of a stream, where encryption starts
 def first_encrypted(stream, packets):
     """
     Stream = np.array of size [packets, rows, cols]

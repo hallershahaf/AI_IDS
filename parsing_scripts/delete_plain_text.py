@@ -27,7 +27,7 @@ def delete_plain_text(source_fold, dest_fold, packets):
         cur_stream[:, :, 0:((first_encrypted - 1) * cols)] = 0
 
         # Save output
-        np.save(f_name ,cur_stream)
+        np.save(f_name, cur_stream)
         i += 1
         print("Finished " + str(i) + " from " + str(streams))
     print("Finished deleting plain text packets")

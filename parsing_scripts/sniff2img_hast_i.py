@@ -1,6 +1,5 @@
 import re
 import numpy as np
-import re
 # import os
 
 
@@ -12,6 +11,8 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
     mtu = 1514
     cols = 32
     rows = int(np.ceil(mtu / cols))
+
+    parsed = []
 
     # reading hex
     # Read sniff
@@ -32,7 +33,6 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
 
     if not is_scapy:
         p_bytes = packets.split("\n")
-        parsed = []
         i = 0
         p = 0
         while i < len(p_bytes) - 1:
@@ -56,7 +56,6 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
         # print("Found ", str(p), " packets")
 
     elif is_scapy:
-        parsed = []
         p_bytes = packets.split("\n")
         p_bytes = p_bytes[2:]
         for p in p_bytes:
@@ -107,7 +106,8 @@ def sniff2img(sniff_file, out_file, stream_length, shift_stream, packets2move):
                     if r * cols + 2 * c > packet_size - 1:
                         break
                     else:
-                        parsed[0, r, c + ((p + movement * packets2move) * cols)] = int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
+                        parsed[0, r, c + ((p + movement * packets2move) * cols)] = \
+                            int(str(tmp[p][r * cols + 2 * c:r * cols + 2 * c + 2]), 16)
         # mid-converting status
         # print("finished ", str(p + 1), " packets of ", str(packets))
     """

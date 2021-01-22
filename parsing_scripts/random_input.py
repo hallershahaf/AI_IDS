@@ -34,7 +34,7 @@ def random_input(folder_name, vector_length, depth, rows, cols, prob):
         else:
             out_mat[s] = (np.random.rand(depth, rows, cols).astype(int) * 127) + 127
     # Note the order of the output
-    output = [out_mat, out_valid]
+    # output = [out_mat, out_valid]
     # Saves the output to files for the dataset
     if os.path.exists(folder_name):
         shutil.rmtree(folder_name)

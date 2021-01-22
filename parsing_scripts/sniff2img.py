@@ -1,6 +1,7 @@
 """Reads hex dump of wireshark and transform to images"""
 
 
+# This turns sniffed packets into an image we can feed into the NN
 def sniff2img(sniff_file, sing_or_mult, bin_or_txt, wshark_or_tdump):
     """Imports"""
     import re
